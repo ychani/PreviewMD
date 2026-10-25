@@ -255,7 +255,10 @@ token and lets the server ask for consent again. A token that is unknown or revo
 `consentPending` again (the server re-prompts), unless the grant was revoked
 less than 10 minutes ago, in which case the server MUST reply
 `error{code:"unauthorized", reason:"revoked"}` (fatal) instead, so a client
-cannot nag the user immediately after being revoked.
+cannot nag the user immediately after being revoked. The client-side 10-minute hold (C6) does not apply to a
+connection answering a wake URL (`hello.wakeRequestId`, §16.5): the server
+invited it, for example after the user clicked Connect in Univocal, and the
+server alone decides whether its own hold still applies.
 
 While waiting, the client SHOULD show "Waiting for approval in Univocal…".
 

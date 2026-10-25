@@ -89,7 +89,7 @@ Legend: ✓ covered · ◐ partial · — not covered · manual.
 | C3 | Ignores unknown message types and fields. | 3.3 | ✓ (mock injects) | ✓ | n/a |
 | C4 | Never splits a JSON message across frames; frames ≤ `maxFrameBytes`; uses `append` beyond that. | 3.1, 8 | ✓ | ✓ | n/a |
 | C5 | On `consentPending` shows a waiting state; on `consentGranted` stores the token securely (Keychain) keyed by server `bundleId` and does **not** re-send `hello`. | 5.3 | ✓ | ✓ (InMemory + Keychain) | n/a |
-| C6 | Presents the stored token on later `hello`s; on `unauthorized{revoked}` discards it and surfaces "not authorised" without auto-retrying for 10 min. | 5.3 | ✓ | ✓ | n/a |
+| C6 | Presents the stored token on later `hello`s; on `unauthorized{revoked}` discards it and surfaces "not authorised" without auto-retrying for 10 min (a wake connection, §16.5, is exempt). | 5.3 | ✓ | ✓ | n/a |
 | C7 | Offsets it sends (`startOffset`, `seek.offset`) are UTF-16 indices into exactly the text it sent; `\n` line endings. | 7 | ✓ | ✓ | n/a |
 | C8 | Applies `word`/`sentence` ranges as UTF-16 half-open ranges; tolerates repeated identical ranges without re-animating. | 5.7, 7 | ✓ | ✓ | n/a |
 | C9 | Treats `ended` as terminal and clears highlights; handles `preempted` without error UI. | 5.7 | ✓ | ✓ | n/a |

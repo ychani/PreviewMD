@@ -241,11 +241,17 @@ final class ConsentTests: UnivocalTestCase {
         let connectionsAfter = await mock.log.filter { $0.hasSuffix(" accepted") }.count
         XCTAssertEqual(connectionsBefore, connectionsAfter)
 
+        // A wake (§16.5) bypasses the client's hold: the server invited it.
+        _ = try await client.connectForWake(requestId: "w1")
+        let issuedAfterWake = await mock.issuedTokens
+        XCTAssertEqual(issuedAfterWake.count, 2, "a wake reaches the server and is granted despite the hold")
+        await client.disconnect()
+
         // forgetAuthorization() lifts the hold; the next connect re-prompts.
         try await client.forgetAuthorization()
         _ = try await client.connect()
         let issued = await mock.issuedTokens
-        XCTAssertEqual(issued.count, 2)
+        XCTAssertEqual(issued.count, 3)
     }
 
     func testRevokedTokenWithinTenMinutesIsRefusedWithoutPrompt() async throws {

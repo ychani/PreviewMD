@@ -109,6 +109,9 @@ public actor UnivocalClient {
                 continue   // a quiet connect-at-launch was refused; this caller may prompt
             }
         }
+        // A wake (SPEC §16.5) is the server inviting this app back, e.g. after the user
+        // clicked Connect in Univocal, so the post-revoke hold doesn't apply to it.
+        if options.wakeRequestId != nil { revokedUntil = nil }
         if let until = revokedUntil {
             if Date() < until {
                 throw UnivocalError(code: .unauthorized,
