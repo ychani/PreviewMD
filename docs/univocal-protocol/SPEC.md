@@ -195,6 +195,7 @@ server, `S→C` server to client.
 | `client.name` | R | Human-readable, shown in the consent prompt (≤ 64 chars). |
 | `client.version` | R | Free-form. |
 | `client.bundleId` | O | Informational; the server trusts the code identity it resolves itself (§6.2), never this field. |
+| `client.instance` | O | Which instance of the app this connection is, when one app runs several (an Obsidian vault name, a workspace); ≤ 128 chars. Informational: the server MAY show it and MAY use it to address a wake it opens on the user's request (§16.5), never for identity. |
 | `capabilities` | O | Client capability strings (§11). |
 | `token` | O | A previously granted token. Omit on first contact. |
 | `quiet` | O | `true`: "connect only if already authorised" — if consent would be needed the server MUST NOT prompt and MUST reply `consentDenied{reason:"quiet"}` then close (§16.9). Default `false`. |
@@ -944,6 +945,13 @@ document, or activate itself because of it; it connects (or reuses its
 connection) and sends `hello{wakeRequestId}`. If it is not in a state to read
 it SHOULD still connect and then `readDecline` so the fallback runs promptly
 instead of after the wake budget.
+
+A wake the user asks for outside a hotkey press (for example Connect in
+Univocal's settings) MAY address one instance: when the app's last `hello`
+carried `client.instance`, the server MAY add it to the wake URL in the form
+the host app expects (for Obsidian, `vault=<instance>`). A hotkey wake MUST
+NOT add it: the window the user pressed the hotkey in is already the right
+instance, and naming another could make the app open a window.
 
 ### 16.6 Time budgets
 
