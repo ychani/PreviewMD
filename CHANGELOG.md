@@ -7,7 +7,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow 
 
 ### Docs
 - Reorganize the README around download and setup, clarify Quick Look versus app features, and simplify privacy guidance.
-- Show the Finder-to-Quick Look workflow in a short recorded README demo.
+- Show synchronized dark-mode Quick Look recordings side by side, comparing plain Markdown with PreviewMD formatting.
 
 ## [0.4.0] — 2026-10-21
 

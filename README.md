@@ -20,7 +20,7 @@ macOS 13+ · Apple silicon and Intel · Free and open source
 
 </div>
 
-<img src="docs/images/quicklook-demo.gif" alt="A Markdown file selected in Finder opens with Space in PreviewMD Quick Look, showing a heading, table, checklist, and code, then closes back to Finder" width="820">
+<img src="docs/images/quicklook-demo.gif" alt="Synchronized dark-mode Finder Quick Look comparison: plain Markdown without PreviewMD on the left, formatted headings, table, checklist, and code with PreviewMD on the right" width="820">
 
 ## Install
 
