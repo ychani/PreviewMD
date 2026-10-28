@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow 
 
 ## [Unreleased]
 
+### Docs
+- Reorganize the README around download and setup, clarify Quick Look versus app features, and simplify privacy guidance.
+- Show the Finder-to-Quick Look workflow in a short recorded README demo.
+
 ## [0.4.0] — 2026-10-21
 
 First public release. Version 0.3.0 was never published; its changes ship here too.
