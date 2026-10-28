@@ -2,13 +2,13 @@
 
 ## Supported versions
 
-Only the latest release of PreviewMD receives security fixes. Please check that you can reproduce an issue on the latest version from [GitHub Releases](https://github.com/ychani/Preview-md/releases) before reporting it.
+Only the latest release of PreviewMD receives security fixes. Please check that you can reproduce an issue on the latest version from [GitHub Releases](https://github.com/ychani/PreviewMD/releases) before reporting it.
 
 ## Reporting a vulnerability
 
 Please **do not open a public issue** for security problems.
 
-Report it privately through GitHub's private vulnerability reporting: go to the repository's **Security** tab and choose **Report a vulnerability** ([direct link](https://github.com/ychani/Preview-md/security/advisories/new)).
+Report it privately through GitHub's private vulnerability reporting: go to the repository's **Security** tab and choose **Report a vulnerability** ([direct link](https://github.com/ychani/PreviewMD/security/advisories/new)).
 
 Helpful details:
 

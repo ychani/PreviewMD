@@ -17,8 +17,8 @@ Thanks for helping out. Bug reports, small fixes, and focused improvements are a
 ## Build and test
 
 ```bash
-git clone https://github.com/ychani/Preview-md.git
-cd Preview-md
+git clone https://github.com/ychani/PreviewMD.git
+cd PreviewMD
 swift build                # debug build
 swift run PreviewMD        # launch the app (make run)
 swift test                 # unit tests (make test; needs full Xcode)

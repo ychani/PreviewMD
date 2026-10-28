@@ -8,13 +8,13 @@
 
 Native Markdown previews in Finder, plus a reader for your files and folders.
 
-**[Download for macOS](https://github.com/ychani/Preview-md/releases/latest) · [Install with Homebrew](#homebrew)**
+**[Download for macOS](https://github.com/ychani/PreviewMD/releases/latest) · [Install with Homebrew](#homebrew)**
 
 macOS 13+ · Apple silicon and Intel · Free and open source
 
-[![Latest release](https://img.shields.io/github/v/release/ychani/Preview-md?label=release)](https://github.com/ychani/Preview-md/releases/latest)
-[![License: MIT](https://img.shields.io/github/license/ychani/Preview-md)](LICENSE)
-[![CI](https://github.com/ychani/Preview-md/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/ychani/Preview-md/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/ychani/PreviewMD?label=release)](https://github.com/ychani/PreviewMD/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/ychani/PreviewMD)](LICENSE)
+[![CI](https://github.com/ychani/PreviewMD/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/ychani/PreviewMD/actions/workflows/ci.yml)
 
 [Install](#install) · [Quick Look or the app?](#quick-look-or-the-app) · [Features](#features) · [Privacy](#privacy) · [Troubleshooting](#troubleshooting)
 
@@ -26,7 +26,7 @@ macOS 13+ · Apple silicon and Intel · Free and open source
 
 ### Download
 
-Download the notarized `PreviewMD-<version>.dmg` from the [latest release](https://github.com/ychani/Preview-md/releases/latest), open it, and drag PreviewMD to Applications.
+Download the notarized `PreviewMD-<version>.dmg` from the [latest release](https://github.com/ychani/PreviewMD/releases/latest), open it, and drag PreviewMD to Applications.
 
 ### Homebrew
 
@@ -119,7 +119,7 @@ If another Markdown Quick Look extension is installed, Finder may pick that one 
 Quick Look displays a static preview. Open the file in PreviewMD to render diagrams and follow wikilinks.
 
 **macOS says the app can't be opened.**
-Use the notarized download from [GitHub Releases](https://github.com/ychani/Preview-md/releases/latest). Builds from source are ad-hoc signed; see [Running a source build](CONTRIBUTING.md#running-a-source-build).
+Use the notarized download from [GitHub Releases](https://github.com/ychani/PreviewMD/releases/latest). Builds from source are ad-hoc signed; see [Running a source build](CONTRIBUTING.md#running-a-source-build).
 
 <details>
 <summary>Reset app preferences</summary>
@@ -178,7 +178,7 @@ defaults delete com.preview-md.app 2>/dev/null || true
 
 ## Planned
 
-Read-aloud with word highlighting via [Univocal](https://univocalapp.com) is planned and is **not included in v0.4.0**. [Suggest a feature](https://github.com/ychani/Preview-md/issues).
+Read-aloud with word highlighting via [Univocal](https://univocalapp.com) is planned and is **not included in v0.4.0**. [Suggest a feature](https://github.com/ychani/PreviewMD/issues).
 
 <details>
 <summary>Build from source</summary>
@@ -186,8 +186,8 @@ Read-aloud with word highlighting via [Univocal](https://univocalapp.com) is pla
 You need macOS 13 or later and Swift 5.9+. `swift test` and the default universal `make app` need full Xcode. Command Line Tools are enough for `swift run` and `make app ARCHS=arm64`.
 
 ```bash
-git clone https://github.com/ychani/Preview-md.git
-cd Preview-md
+git clone https://github.com/ychani/PreviewMD.git
+cd PreviewMD
 swift run PreviewMD        # run in development
 swift test                 # unit tests
 make app                   # dist/PreviewMD.app with the Quick Look extension

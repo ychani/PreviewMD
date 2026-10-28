@@ -180,9 +180,9 @@ final class RemoteImageBannerWebViewTests: XCTestCase {
 
         <img src="packaging/AppIcon.png" width="128" alt="icon">
 
-        [![Latest release](https://img.shields.io/github/v/release/ychani/Preview-md?label=release)](https://github.com/ychani/Preview-md/releases/latest)
+        [![Latest release](https://img.shields.io/github/v/release/ychani/PreviewMD?label=release)](https://github.com/ychani/PreviewMD/releases/latest)
         ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue)
-        [![CI](https://github.com/ychani/Preview-md/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/ychani/Preview-md/actions/workflows/ci.yml)
+        [![CI](https://github.com/ychani/PreviewMD/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/ychani/PreviewMD/actions/workflows/ci.yml)
 
         </div>
         """
