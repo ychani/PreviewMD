@@ -178,7 +178,7 @@ defaults delete com.preview-md.app 2>/dev/null || true
 
 ## Planned
 
-Read-aloud with word highlighting via [Univocal](https://univocalapp.com) is planned and is **not included in v0.4.0**. [Suggest a feature](https://github.com/ychani/PreviewMD/issues).
+Read-aloud with word highlighting via [Univocal](https://univocalapp.com/?utm_source=previewmd&utm_medium=readme&utm_campaign=crosslink) is planned and is **not included in v0.4.0**. [Suggest a feature](https://github.com/ychani/PreviewMD/issues).
 
 <details>
 <summary>Build from source</summary>
