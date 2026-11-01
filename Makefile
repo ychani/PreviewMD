@@ -54,7 +54,7 @@ TIMESTAMP_FLAG    := --timestamp
 endif
 CODESIGN          := codesign --sign "$(SIGN_IDENTITY)" --force --options runtime $(TIMESTAMP_FLAG)
 
-.PHONY: all build test run app appex sign clean install-ql \
+.PHONY: all build test test-old-macos test-old-macos-update run app appex sign clean install-ql \
         check-notary notarize-app dmg notarize release-notes release
 
 all: app
@@ -130,6 +130,16 @@ install-ql: app
 
 test:
 	swift test
+
+# Desktop checks in throwaway Tart VMs (macOS 14 and 15; needs Tart and the
+# Cirrus Labs base images, see each script's header). Run at every release
+# prep; not in CI. NEW_DMG=dist/PreviewMD-X.Y.Z.dmg tests the release DMG
+# instead of a build of this checkout.
+OLD_MACOS ?= all
+test-old-macos: test-old-macos-update
+
+test-old-macos-update:
+	tools/test-old-macos-update.sh $(OLD_MACOS) $(if $(NEW_DMG),--new-dmg "$(NEW_DMG)")
 
 # --- Distribution -----------------------------------------------------------
 # Requires an Apple Developer ID. One-time setup:

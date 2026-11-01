@@ -27,6 +27,8 @@ make app ARCHS=arm64       # single-arch app (Command Line Tools are enough)
 make install-ql            # build, copy to ~/Applications, register Quick Look
 ```
 
+Before a release, `make test-old-macos` runs the desktop checks in throwaway [Tart](https://tart.run) VMs on macOS 14 and 15: the update from 0.4.0 to this build, both by DMG replacement and by `brew upgrade --cask` (`tools/test-old-macos-update.sh`). Each check saves screenshots under `build/old-macos/out/<os>/<flow>/` and fails on a wrong state. `NEW_DMG=dist/PreviewMD-X.Y.Z.dmg` tests the release DMG. It needs Tart and about 25 GB per macOS image, and it is not part of CI.
+
 Other targets: `make build` (release binaries only), `make appex` (assemble only the Quick Look extension into an existing `dist/` app, unsigned), `make clean`.
 
 `make install-ql` also removes an old `~/Applications/Preview-MD.app`, but only if its bundle ID is `com.preview-md.app`.
