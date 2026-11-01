@@ -228,7 +228,9 @@ check_version() {
     failed "$p: Quick Look preview drawn by the extension" || step "$p: the preview shows rendered Markdown" \
         read_png "$SHARE/out/$OS/$FLOW/$p-quicklook.png" "Update check" "Rendered by PreviewMD" "!\\*\\*" "!# Update check"
 
-    # The Finder icon, from the same registration.
+    # The Finder thumbnail, for the record. PreviewMD ships only a preview
+    # extension (com.apple.quicklook.preview), so macOS draws this one as plain
+    # text; the rendering check is the preview step above.
     step "$p: Quick Look thumbnail" guest '
         rm -rf "$L/thumbs" && mkdir -p "$L/thumbs"
         qlmanage -t -s 512 -o "$L/thumbs" "$L/Update check.md" >/dev/null 2>&1
