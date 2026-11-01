@@ -400,7 +400,15 @@ if (( ! BLOCKED )); then
     read -r _ OLD_BUILD < <(dmg_version "$WORK/stage/old.dmg")
     read -r NEW_VERSION NEW_BUILD < <(dmg_version "$WORK/stage/new.dmg")
     step "new DMG is newer: $OLD_VERSION ($OLD_BUILD) → $NEW_VERSION ($NEW_BUILD)" bash -c '
-        [ -n "$3" ] && [ "$1" != "$3" ] || { echo "the new DMG is $3 ($4)"; exit 1; }
+        IFS=. read -ra a <<< "$1"; IFS=. read -ra b <<< "$3"
+        newer=0
+        for (( i = 0; i < ${#a[@]} || i < ${#b[@]}; i++ )); do
+            x=${a[i]:-0} y=${b[i]:-0}
+            [[ $x =~ ^[0-9]+$ && $y =~ ^[0-9]+$ ]] || { echo "cannot compare versions $1 and $3"; exit 1; }
+            (( 10#$y > 10#$x )) && { newer=1; break; }
+            (( 10#$y < 10#$x )) && break
+        done
+        (( newer )) || { echo "the new DMG is $3 ($4), not above $1"; exit 1; }
         [ "$4" -gt "$2" ] 2>/dev/null || { echo "build $4 is not above $2: Quick Look would keep the old extension"; exit 1; }' \
         _ "$OLD_VERSION" "$OLD_BUILD" "$NEW_VERSION" "$NEW_BUILD"
     failed "new DMG is newer: $OLD_VERSION ($OLD_BUILD) → $NEW_VERSION ($NEW_BUILD)" && BLOCKED=1
