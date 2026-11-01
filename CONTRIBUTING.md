@@ -29,6 +29,8 @@ make install-ql            # build, copy to ~/Applications, register Quick Look
 
 Other targets: `make build` (release binaries only), `make appex` (assemble only the Quick Look extension into an existing `dist/` app, unsigned), `make clean`.
 
+`make test-old-macos` runs the first launch, opening a file and a folder, and Quick Look in throwaway [Tart](https://tart.run) VMs on older macOS (`tools/test-old-macos.sh`; needs Tart and its Cirrus Labs base images, ~25 GB each). It saves a screenshot of every checked screen under `build/old-macos/out/` and runs before every release.
+
 `make install-ql` also removes an old `~/Applications/Preview-MD.app`, but only if its bundle ID is `com.preview-md.app`.
 
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the release build, the tests, and a universal `make app` on every push to `develop` and `main` and on every pull request. It fails unless the app and Quick Look executables contain both `arm64` and `x86_64`.

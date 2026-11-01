@@ -54,7 +54,7 @@ TIMESTAMP_FLAG    := --timestamp
 endif
 CODESIGN          := codesign --sign "$(SIGN_IDENTITY)" --force --options runtime $(TIMESTAMP_FLAG)
 
-.PHONY: all build test run app appex sign clean install-ql \
+.PHONY: all build test test-old-macos run app appex sign clean install-ql \
         check-notary notarize-app dmg notarize release-notes release
 
 all: app
@@ -130,6 +130,13 @@ install-ql: app
 
 test:
 	swift test
+
+# The first run (launch, open a file and a folder, Quick Look) on the oldest
+# supported macOS and on 15, in throwaway Tart VMs; screenshots land in
+# build/old-macos/out/<os>/<flow>/. Part of every release's QA. OS=sonoma
+# (or ventura, sequoia) runs one; PREVIEWMD_APP=<app> tests a given bundle.
+test-old-macos:
+	tools/test-old-macos.sh $(OS)
 
 # --- Distribution -----------------------------------------------------------
 # Requires an Apple Developer ID. One-time setup:
