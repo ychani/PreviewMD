@@ -306,7 +306,8 @@ for OS in "${OSES[@]}"; do
         fi
     fi
     RAN+=("$OS")
-    rm -rf "$OUT/$OS" && mkdir -p "$OUT/$OS"
+    # Only this script's flows: the update test keeps its own beside them.
+    rm -rf "$OUT/$OS"/{launch,open-file,open-folder,quicklook} && mkdir -p "$OUT/$OS"
     boot
     install_app
     flow_launch
