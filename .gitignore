@@ -31,3 +31,6 @@ dist/
 
 # Local agent / tool state
 .claude/
+
+# Tart VM test runs (tools/test-old-macos.sh)
+build/

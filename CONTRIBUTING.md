@@ -27,9 +27,9 @@ make app ARCHS=arm64       # single-arch app (Command Line Tools are enough)
 make install-ql            # build, copy to ~/Applications, register Quick Look
 ```
 
-Before a release, `make test-old-macos` runs the desktop checks in throwaway [Tart](https://tart.run) VMs on macOS 14 and 15: the update from 0.4.0 to this build, both by DMG replacement and by `brew upgrade --cask` (`tools/test-old-macos-update.sh`). Each check saves screenshots under `build/old-macos/out/<os>/<flow>/` and fails on a wrong state. `NEW_DMG=dist/PreviewMD-X.Y.Z.dmg` tests the release DMG. It needs Tart and about 25 GB per macOS image, and it is not part of CI.
-
 Other targets: `make build` (release binaries only), `make appex` (assemble only the Quick Look extension into an existing `dist/` app, unsigned), `make clean`.
+
+Before every release, `make test-old-macos` runs the desktop checks in throwaway [Tart](https://tart.run) VMs on the oldest supported macOS and on 15. `make test-old-macos-first-run` covers the first launch, opening a file and a folder, and Quick Look (`tools/test-old-macos.sh`; `PREVIEWMD_APP=<app>` tests a given bundle). `make test-old-macos-update` covers the update from 0.4.0 to this build, by DMG replacement and by `brew upgrade --cask` (`tools/test-old-macos-update.sh`; `NEW_DMG=dist/PreviewMD-X.Y.Z.dmg` tests the release DMG). Each saves a screenshot of every checked screen under `build/old-macos/out/<os>/<flow>/` and fails on a wrong state. `OS=sonoma` (or `ventura`, `sequoia`) runs one macOS. They need Tart and its Cirrus Labs base images (~25 GB each), and they are not part of CI.
 
 `make install-ql` also removes an old `~/Applications/Preview-MD.app`, but only if its bundle ID is `com.preview-md.app`.
 

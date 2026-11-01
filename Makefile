@@ -54,7 +54,7 @@ TIMESTAMP_FLAG    := --timestamp
 endif
 CODESIGN          := codesign --sign "$(SIGN_IDENTITY)" --force --options runtime $(TIMESTAMP_FLAG)
 
-.PHONY: all build test test-old-macos test-old-macos-update run app appex sign clean install-ql \
+.PHONY: all build test test-old-macos test-old-macos-first-run test-old-macos-update run app appex sign clean install-ql \
         check-notary notarize-app dmg notarize release-notes release
 
 all: app
@@ -131,15 +131,24 @@ install-ql: app
 test:
 	swift test
 
-# Desktop checks in throwaway Tart VMs (macOS 14 and 15; needs Tart and the
-# Cirrus Labs base images, see each script's header). Run at every release
-# prep; not in CI. NEW_DMG=dist/PreviewMD-X.Y.Z.dmg tests the release DMG
-# instead of a build of this checkout.
-OLD_MACOS ?= all
-test-old-macos: test-old-macos-update
+# Desktop checks in throwaway Tart VMs on the oldest supported macOS and on 15
+# (needs Tart and the Cirrus Labs base images, see each script's header).
+# Part of every release's QA; not in CI. Screenshots land in
+# build/old-macos/out/<os>/<flow>/. OS=sonoma (or ventura, sequoia) runs one.
+#   test-old-macos-first-run: launch, open a file and a folder, Quick Look;
+#     PREVIEWMD_APP=<app> tests a given bundle.
+#   test-old-macos-update: 0.4.0 -> this build, by DMG replace and by
+#     brew upgrade --cask; NEW_DMG=dist/PreviewMD-X.Y.Z.dmg tests the release DMG.
+# test-old-macos runs both and fails if either does.
+test-old-macos:
+	@rc=0; $(MAKE) --no-print-directory test-old-macos-first-run || rc=1; \
+	$(MAKE) --no-print-directory test-old-macos-update || rc=1; exit $$rc
+
+test-old-macos-first-run:
+	tools/test-old-macos.sh $(OS)
 
 test-old-macos-update:
-	tools/test-old-macos-update.sh $(OLD_MACOS) $(if $(NEW_DMG),--new-dmg "$(NEW_DMG)")
+	tools/test-old-macos-update.sh $(or $(OS),all) $(if $(NEW_DMG),--new-dmg "$(NEW_DMG)")
 
 # --- Distribution -----------------------------------------------------------
 # Requires an Apple Developer ID. One-time setup:

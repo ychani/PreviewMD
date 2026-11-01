@@ -2,11 +2,12 @@
 # The update path, 0.4.0 → this build, on the oldest macOS we can test, in
 # throwaway Tart VMs.
 #
-#   tools/test-old-macos-update.sh [sonoma|sequoia|all] [dmg|brew] [--new-dmg PATH]
-#                                  [--old-dmg PATH] [--keep] [--gui]
+#   tools/test-old-macos-update.sh [ventura|sonoma|sequoia|all] [dmg|brew]
+#                                  [--new-dmg PATH] [--old-dmg PATH] [--pull] [--keep] [--gui]
 #
-#   os:   sonoma (macOS 14, the default) or sequoia (15), or all. The app says
-#         13.0, but there is no Ventura image here yet (NAR-108 has the decision).
+#   os:   ventura (13, the minimum), sonoma (14), sequoia (15), or all (the
+#         default): every one whose base image is on this Mac, the rest skipped.
+#         An OS named outright must have its image, or --pull fetches it (~25 GB).
 #   flow: dmg (drag-install 0.4.0, then replace it with the new DMG) or brew
 #         (`brew install --cask` 0.4.0 from packaging/homebrew/previewmd.rb in
 #         a local tap, then `brew upgrade --cask` to the new DMG). Both by default,
@@ -51,22 +52,24 @@ OLD_SHA=98681440cbf57bb042e8fdfecf2cc48c80845d9dbaadbacdc15a2aa827677d7f
 OLD_URL="https://github.com/ychani/PreviewMD/releases/download/v$OLD_VERSION/PreviewMD-$OLD_VERSION.dmg"
 QL_ID=com.narnarlabs.previewmd.quicklook
 
-OSES=() FLOWS=() KEEP=0 GUI=0 NEW_DMG="" OLD_DMG=""
-usage() { echo "usage: $0 [sonoma|sequoia|all] [dmg|brew] [--new-dmg PATH] [--old-dmg PATH] [--keep] [--gui]" >&2; exit 2; }
+ALL_OSES=(ventura sonoma sequoia)
+OSES=() FLOWS=() NAMED=0 PULL=0 KEEP=0 GUI=0 NEW_DMG="" OLD_DMG=""
+usage() { echo "usage: $0 [ventura|sonoma|sequoia|all] [dmg|brew] [--new-dmg PATH] [--old-dmg PATH] [--pull] [--keep] [--gui]" >&2; exit 2; }
 while (( $# )); do
     case "$1" in
-        sonoma|sequoia) OSES+=("$1") ;;
-        all) OSES+=(sonoma sequoia) ;;
+        ventura|sonoma|sequoia) OSES+=("$1"); NAMED=1 ;;
+        all) OSES+=("${ALL_OSES[@]}") ;;
         dmg|brew) FLOWS+=("$1") ;;
         --new-dmg) shift; NEW_DMG="${1:-}"; [[ -n "$NEW_DMG" ]] || usage ;;
         --old-dmg) shift; OLD_DMG="${1:-}"; [[ -n "$OLD_DMG" ]] || usage ;;
+        --pull) PULL=1 ;;
         --keep) KEEP=1 ;;
         --gui) GUI=1 ;;
         *) usage ;;
     esac
     shift
 done
-(( ${#OSES[@]} )) || OSES=(sonoma)
+(( ${#OSES[@]} )) || OSES=("${ALL_OSES[@]}")
 (( ${#FLOWS[@]} )) || FLOWS=(dmg brew)
 [[ -z "$NEW_DMG" || -f "$NEW_DMG" ]] || { echo "no DMG at $NEW_DMG" >&2; exit 2; }
 [[ -z "$OLD_DMG" || -f "$OLD_DMG" ]] || { echo "no DMG at $OLD_DMG" >&2; exit 2; }
@@ -76,7 +79,7 @@ WORK="$ROOT/build/old-macos"
 SHARE="$WORK/share-update"   # only what the guest needs; results come back here
 TOOLS="$WORK/tools"
 
-FAILED=()
+FAILED=() SKIPPED=() RAN=()
 BLOCKED=0
 TAG=host
 step() {   # step "<name>" <command...>
@@ -98,7 +101,7 @@ failed() { [[ " ${FAILED[*]-} " == *" $TAG: $1 "* ]]; }
 must() { step "$@"; failed "$1" && BLOCKED=1; }
 
 image_for() { echo "ghcr.io/cirruslabs/macos-$1-base:latest"; }
-major_for() { case "$1" in sonoma) echo 14 ;; sequoia) echo 15 ;; esac; }
+major_for() { case "$1" in ventura) echo 13 ;; sonoma) echo 14 ;; sequoia) echo 15 ;; esac; }
 
 VM="" RUN_PID=""
 # Every guest step gets 3 minutes: a dialog nobody can click must fail the
@@ -173,14 +176,19 @@ check_version() {
             || { echo "no PreviewMD window on screen:"; cat "$OUT/'"$p"'-windows.txt"; exit 1; }
         shot '"$p"'-window'
 
+    # PreviewMD › About PreviewMD, pressed through Accessibility (see
+    # tools/old-macos/menuclick.swift).
     step "$p: About says Version $v ($b)" guest '
-        osascript -e "tell application \"System Events\" to tell process \"PreviewMD\"" \
-            -e "set frontmost to true" \
-            -e "click menu item \"About PreviewMD\" of menu 1 of menu bar item \"PreviewMD\" of menu bar 1" \
-            -e "end tell" >/dev/null || exit 1
+        "$S/menuclick" PreviewMD PreviewMD "About PreviewMD" || exit 1
         sleep 2; shot '"$p"'-about'
     failed "$p: About says Version $v ($b)" || step "$p: About screenshot reads Version $v ($b)" \
         read_png "$SHARE/out/$OS/$FLOW/$p-about.png" "PreviewMD" "Version ${v//./\\.} \\($b\\)"
+
+    # Quick Look below runs with the app quit, as in Finder most of the time
+    # (and with no About panel over the preview).
+    step "$p: quit" guest '
+        pkill -x PreviewMD; for _ in $(seq 10); do pgrep -f "$PROC" >/dev/null || exit 0; sleep 1; done
+        echo "the app would not quit"; exit 1'
 
     # The registration Quick Look actually uses: one entry, at /Applications,
     # this version. Before the update a person turns it on (what System
@@ -228,9 +236,6 @@ check_version() {
         [ -s "$f" ] || { echo "no thumbnail written"; exit 1; }
         cp "$f" "$OUT/'"$p"'-thumbnail.png"'
 
-    step "$p: quit" guest '
-        pkill -x PreviewMD; for _ in $(seq 10); do pgrep -f "$PROC" >/dev/null || exit 0; sleep 1; done
-        echo "the app would not quit"; exit 1'
 }
 
 # --- the flows ----------------------------------------------------------------
@@ -262,6 +267,21 @@ boot() {
     # the DMGs over the share while installing.
     must "files copied into the guest" guest '
         rm -rf "$L" && mkdir -p "$L" "$OUT" && cp -R "$S/files/." "$L/"'
+    # As in tools/test-old-macos.sh: the base image opens System Settings at
+    # login, so close it; and macOS 15 asks again, over every screenshot,
+    # whether the guest agent may keep capturing the screen, so pre-approve it
+    # as a click on Allow would (replayd rereads its approvals when restarted).
+    must "screen clear for screenshots" guest '
+        pkill -x "System Settings"; sleep 1
+        [ "$(sw_vers -productVersion | cut -d. -f1)" -ge 15 ] || exit 0
+        agent=$(ps -axo comm= | grep -m1 "/tart-guest-agent$")
+        [ -n "$agent" ] || { echo "tart-guest-agent not found running"; exit 1; }
+        agent=$(realpath "$agent") || exit 1   # keyed by the Cellar binary, not the symlink
+        far="3024-01-01T00:00:00Z"
+        defaults write "$HOME/Library/Group Containers/group.com.apple.replayd/ScreenCaptureApprovals" \
+            "$agent" -dict kScreenCaptureApprovalLastAlerted -date "$far" \
+            kScreenCaptureApprovalLastUsed -date "$far" kScreenCapturePrivacyHintDate -date "$far" || exit 1
+        killall replayd 2>/dev/null; true'
 }
 
 dmg_install() {   # dmg_install <dmg in the guest's files>: what Finder does on a drag
@@ -394,15 +414,25 @@ step "shared folder staged" bash -c '
     cp "$2"/stage/{old.dmg,new.dmg,previewmd-old.rb,previewmd-new.rb} "$3/tools/old-macos/Update check.md" "$1/files/"
     # Window owners and sizes need no Screen Recording grant.
     swiftc -O -target arm64-apple-macos13.0 "$3/tools/old-macos/winlist.swift" -o "$1/winlist"
+    swiftc -O -target arm64-apple-macos13.0 "$3/tools/old-macos/menuclick.swift" -o "$1/menuclick"
     swiftc -O "$3/tools/old-macos/ocr.swift" -o "$2/tools/ocr"' _ "$SHARE" "$WORK" "$ROOT"
 failed "shared folder staged" && BLOCKED=1
 HOST_BLOCKED=$BLOCKED
 
 for OS in "${OSES[@]}"; do
     if ! tart list -q 2>/dev/null | grep -qxF "$(image_for "$OS")"; then
-        echo "pulling $(image_for "$OS") (first run only, ~25 GB)…"
-        tart pull "$(image_for "$OS")" || { FAILED+=("$OS: image"); continue; }
+        if (( PULL )); then
+            echo "pulling $(image_for "$OS") (~25 GB, once)…"
+            tart pull "$(image_for "$OS")" || { FAILED+=("$OS: image pull"); continue; }
+        elif (( NAMED )); then
+            echo "no $(image_for "$OS") on this Mac: add --pull to fetch it (~25 GB)"
+            FAILED+=("$OS: no image"); continue
+        else
+            echo "skipped macOS $(major_for "$OS"): no $(image_for "$OS") on this Mac (--pull fetches it, ~25 GB)"
+            SKIPPED+=("$OS"); continue
+        fi
     fi
+    RAN+=("$OS")
     for FLOW in "${FLOWS[@]}"; do
         TAG="$OS/$FLOW"
         echo "== macOS $(major_for "$OS") ($OS), $FLOW: $OLD_VERSION → ${NEW_VERSION:-?}"
@@ -419,8 +449,10 @@ for OS in "${OSES[@]}"; do
 done
 
 echo
+(( ${#SKIPPED[@]} )) && echo "skipped (no image): ${SKIPPED[*]}"
 if (( ${#FAILED[@]} )); then
     echo "FAILED (${#FAILED[@]}): ${FAILED[*]}"
     exit 1
 fi
-echo "all passed (${OSES[*]}: ${FLOWS[*]}, $OLD_VERSION → $NEW_VERSION)"
+(( ${#RAN[@]} )) || { echo "nothing ran: no macOS image on this Mac"; exit 1; }
+echo "all passed (${RAN[*]}: ${FLOWS[*]}, $OLD_VERSION → $NEW_VERSION)"
