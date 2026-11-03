@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow 
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-11-03
+
+Read Aloud reads the open document through Univocal 0.3.29 or later, highlighting the current word and sentence as it goes. Start it from the toolbar or Edit ▸ Read Aloud (⇧⌘R). The first time, allow PreviewMD in Univocal. Text is sent to Univocal on the same Mac only when you start reading.
+
 ### Added
 - **Read Aloud** with word-by-word highlighting through
   [Univocal](https://univocalapp.com) (Univocal Connect protocol): the toolbar
