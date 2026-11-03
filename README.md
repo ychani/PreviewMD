@@ -179,7 +179,7 @@ defaults delete com.preview-md.app 2>/dev/null || true
 
 </details>
 
-## Planned
+## Read Aloud
 
 Read Aloud is included in PreviewMD 0.5.0 and requires [Univocal](https://univocalapp.com/go/previewmd) 0.3.29 or later. Start it from the toolbar or Edit ▸ Read Aloud (⇧⌘R) to hear the open document with word and sentence highlighting. Use Univocal's floating controls to pause, skip, change speed or voice, and stop. [Suggest a feature](https://github.com/ychani/PreviewMD/issues).
 
