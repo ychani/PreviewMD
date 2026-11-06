@@ -20,9 +20,9 @@ Univocal is one app for all the text you read and write. Read Aloud reads the op
   it reads, the toolbar button shows a reading state and ⇧⌘R does nothing. Code blocks, diagrams, images and front
   matter are skipped. Edits in Split view (or a reload from disk) restart
   reading at the current sentence; switching documents or to Edit view
-  stops it. Univocal asks once for permission; without Univocal installed
-  the button says Read Aloud requires Univocal and offers its download page.
-  If an older version of Univocal is installed, the button offers an update.
+  stops it. Univocal asks once for permission. If Univocal isn't installed,
+  clicking the button opens a dialog with a Download option. If an older
+  version of Univocal is installed, the button offers an update.
 - **Univocal's ⌥⇧R reads in PreviewMD** (Univocal Connect hotkey routing):
   with PreviewMD in front, Univocal's own read shortcut reads the open
   document here, with the same highlighting, instead of in Univocal's panel.

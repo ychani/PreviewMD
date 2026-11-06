@@ -429,7 +429,7 @@ final class ReadAloudControllerTests: XCTestCase {
             if case .unauthorized = controller.status { return true } else { return false }
         }
         XCTAssertNil(controller.notice, "a revoke mid-reading pops nothing up; the button shows it")
-        XCTAssertEqual(controller.menuTitle, "Read Aloud — Access Removed in Univocal")
+        XCTAssertEqual(controller.menuTitle, "Read Aloud (Access Removed in Univocal)")
         XCTAssertEqual(controller.helpText, Self.revokedNotice)
     }
 

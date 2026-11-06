@@ -791,7 +791,7 @@ final class ReadAloudController: ObservableObject {
         case .awaitingConsent: return "Waiting for Approval in Univocal…"
         case .playing, .paused: return "Reading Aloud — Controls in Univocal"
         // Too long for a menu; the popover and tooltip say where to fix it.
-        case .unauthorized(Self.revokedMessage): return "Read Aloud — Access Removed in Univocal"
+        case .unauthorized(Self.revokedMessage): return "Read Aloud (Access Removed in Univocal)"
         case .failed(let message), .unauthorized(let message): return "Read Aloud — \(message)"
         default: return "Read Aloud"
         }
