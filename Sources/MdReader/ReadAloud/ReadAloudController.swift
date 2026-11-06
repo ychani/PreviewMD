@@ -35,6 +35,9 @@ final class ReadAloudController: ObservableObject {
     enum Status: Equatable {
         /// Univocal is not installed: the toolbar offers "Get Univocal".
         case unavailable
+        /// Only a Univocal too old for Connect is installed: the toolbar
+        /// offers "Update Univocal".
+        case outdated
         case idle
         /// Launching, connecting or loading; optional detail from Univocal.
         case starting(String?)
@@ -60,7 +63,18 @@ final class ReadAloudController: ObservableObject {
         }
     }
 
-    @Published private(set) var status: Status
+    @Published private(set) var status: Status {
+        didSet { noteClickOutcome() }
+    }
+
+    /// Why the last Read Aloud click didn't start a reading, shown in a
+    /// popover on the toolbar button until dismissed. Without it a click
+    /// that fails at once (e.g. while access is revoked) looks like nothing
+    /// happened: the message was only in the tooltip.
+    @Published var notice: String?
+
+    /// The Read Aloud command was used and its outcome is not known yet.
+    private var awaitingClickOutcome = false
 
     /// The range being read. Not published: they change several times a
     /// second and only the page shows them.
@@ -145,7 +159,7 @@ final class ReadAloudController: ObservableObject {
         self.backend = backend
         self.bridge = bridge ?? ReadAloudWebBridge()
         self.openURL = openURL
-        status = backend.availability() == .notInstalled ? .unavailable : .idle
+        status = Self.status(for: backend.availability())
         // The user may have just installed (or removed) Univocal.
         activationObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
@@ -167,16 +181,32 @@ final class ReadAloudController: ObservableObject {
     /// (or its ⌥⇧R) pauses, skips and stops it.
     func readAloud() {
         switch status {
-        case .unavailable, .idle, .failed, .unauthorized:
+        case .unavailable, .outdated, .idle, .failed, .unauthorized:
+            notice = nil
             refreshAvailability(force: true)
-            if status == .unavailable {
+            if status == .unavailable || status == .outdated {
                 openDownloadPage()
             } else {
+                awaitingClickOutcome = true
                 start()
             }
         case .starting, .awaitingConsent, .playing, .paused:
             break
         }
+    }
+
+    /// A click's attempt ended: if it failed, say why in the popover.
+    private func noteClickOutcome() {
+        guard awaitingClickOutcome else { return }
+        switch status {
+        case .starting, .awaitingConsent:
+            return
+        case .failed(let message), .unauthorized(let message):
+            notice = message
+        case .unavailable, .outdated, .idle, .playing, .paused:
+            break
+        }
+        awaitingClickOutcome = false
     }
 
     /// Stops reading (or the attempt to start) and clears the highlights.
@@ -216,11 +246,19 @@ final class ReadAloudController: ObservableObject {
     /// a shown failure alone unless `force`.
     func refreshAvailability(force: Bool = false) {
         guard !status.isActive else { return }
-        let installed = backend.availability() != .notInstalled
-        if !installed {
-            status = .unavailable
-        } else if status == .unavailable || (force && status != .idle) {
+        let found = Self.status(for: backend.availability())
+        if found != .idle {
+            if status != found { status = found }
+        } else if status == .unavailable || status == .outdated || (force && status != .idle) {
             status = .idle
+        }
+    }
+
+    private static func status(for availability: UnivocalAvailability) -> Status {
+        switch availability {
+        case .notInstalled: return .unavailable
+        case .outdated: return .outdated
+        case .installed: return .idle
         }
     }
 
@@ -310,6 +348,7 @@ final class ReadAloudController: ObservableObject {
     private func answerFromPreview(_ request: UnivocalReadRequest) {
         guard bridge.webView != nil else { return decline(request, .busy, "noPreview") }
         endSession()
+        awaitingClickOutcome = false
         requestCounter &+= 1
         let textRequest = requestCounter
         pendingRequest = textRequest
@@ -340,6 +379,7 @@ final class ReadAloudController: ObservableObject {
             prefer: request.prefer, visibleStart: surface.visibleStartOffset())
         else { return decline(request, .noContent, "nothingAfterCursor") }
         endSession()
+        awaitingClickOutcome = false
         editor = surface
         hotkeyRequest = request
         let token = sessionToken
@@ -709,15 +749,20 @@ final class ReadAloudController: ObservableObject {
         switch status {
         case .awaitingConsent: return "Waiting for Approval in Univocal…"
         case .playing, .paused: return "Reading Aloud — Controls in Univocal"
-        case .failed(let message): return "Read Aloud — \(message)"
+        case .failed(let message), .unauthorized(let message): return "Read Aloud — \(message)"
         default: return "Read Aloud"
         }
+    }
+
+    func dismissNotice() {
+        notice = nil
     }
 
     /// Toolbar tooltip.
     var helpText: String {
         switch status {
         case .unavailable: return "Read aloud needs Univocal — click to get it"
+        case .outdated: return "Read aloud needs a newer Univocal — click to get it"
         case .idle: return "Read Aloud"
         case .starting(let detail): return detail ?? "Starting…"
         case .awaitingConsent: return "Waiting for approval in Univocal…"
@@ -732,7 +777,7 @@ final class ReadAloudController: ObservableObject {
     /// Never while a reading is starting or running.
     func canStart(documentReady: Bool) -> Bool {
         switch status {
-        case .unavailable, .starting, .awaitingConsent, .playing, .paused: return false
+        case .unavailable, .outdated, .starting, .awaitingConsent, .playing, .paused: return false
         case .idle, .failed, .unauthorized: return documentReady
         }
     }

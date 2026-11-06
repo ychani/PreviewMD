@@ -71,6 +71,9 @@ final class UnivocalBackend: ReadAloudBackend {
         // The Unix socket only, never the loopback WebSocket: Read Aloud
         // opens no network connection of any kind.
         configuration.transports = [.unixSocket]
+        // The first Univocal with Connect; an older copy is offered an update
+        // instead of being launched.
+        configuration.minimumServerVersion = "0.3.29"
         client = UnivocalClient(configuration: configuration)
     }
 

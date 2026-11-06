@@ -77,7 +77,12 @@ public struct UnivocalConfiguration: Sendable {
     /// Diagnostics hook. Receives ids, lengths, codes and durations — never text content.
     public var logger: (@Sendable (String) -> Void)?
 
-    /// Resolves the installed server app for a bundle id (default: LaunchServices).
+    /// The oldest server version that speaks this client's protocol, e.g. "0.3.29".
+    /// An older installed copy is reported as `.outdated` and never launched. Default nil.
+    public var minimumServerVersion: String?
+
+    /// Resolves the installed server app for a bundle id (default: LaunchServices,
+    /// newest copy in an Applications folder).
     /// Injected by tests and by hosts that locate Univocal differently.
     public var appLocator: @Sendable (_ bundleId: String) -> URL?
     /// Launches the server in the background with `--connect` (SPEC §4.3).

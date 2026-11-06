@@ -145,9 +145,98 @@ final class PathsTests: UnivocalTestCase {
         XCTAssertEqual(UnivocalLocator.availability(configuration: c), .installed(appURL: app, running: true))
     }
 
+    func testAvailabilityReportsAnOutdatedCopy() throws {
+        let app = try makeApp(in: dir.appendingPathComponent("Applications"), version: "0.3.10")
+        var c = UnivocalConfiguration(client: .init(id: "com.example.app", name: "App", version: "1"), environment: [:])
+        c.connectDirectory = dir
+        c.appLocator = { _ in app }
+        XCTAssertEqual(UnivocalLocator.availability(configuration: c), .installed(appURL: app, running: false))
+        c.minimumServerVersion = "0.3.29"
+        XCTAssertEqual(UnivocalLocator.availability(configuration: c), .outdated(appURL: app, version: "0.3.10"))
+        c.minimumServerVersion = "0.3.10"
+        XCTAssertEqual(UnivocalLocator.availability(configuration: c), .installed(appURL: app, running: false))
+    }
+
+    /// An outdated copy is never launched (it would bring up no listener).
+    func testConnectRefusesToLaunchAnOutdatedCopy() async throws {
+        let app = try makeApp(in: dir.appendingPathComponent("Applications"), version: "0.3.28")
+        var c = UnivocalConfiguration(client: .init(id: "com.example.app", name: "App", version: "1"), environment: [:])
+        c.connectDirectory = dir
+        c.minimumServerVersion = "0.3.29"
+        c.appLocator = { _ in app }
+        let launched = LockedBox(false)
+        c.launcher = { _, _ in launched.value = true }
+        let client = UnivocalClient(configuration: c)
+        do {
+            _ = try await client.connect(launchIfNeeded: true)
+            XCTFail("connected")
+        } catch let e as UnivocalError {
+            XCTAssertEqual(e.code, .unsupportedVersion)
+        }
+        XCTAssertFalse(launched.value)
+    }
+
+    /// NAR-115: with the release copy deleted, LaunchServices still knew a
+    /// hidden 0.3.10 backup in /Applications, build folders and the Trash.
+    func testInstallLocationSkipsHiddenTrashAndBuildCopies() {
+        func ok(_ path: String) -> Bool { UnivocalLocator.isInstallLocation(URL(fileURLWithPath: path)) }
+        XCTAssertTrue(ok("/Applications/Univocal.app"))
+        XCTAssertTrue(ok("/Applications/Utilities/Univocal.app"))
+        XCTAssertTrue(ok("/Users/me/Applications/Univocal.app"))
+        XCTAssertTrue(ok("/Volumes/External/Applications/Univocal.app"))
+        XCTAssertFalse(ok("/Applications/.Univocal-previous.app"))
+        XCTAssertFalse(ok("/Users/me/.Trash/Univocal.app"))
+        XCTAssertFalse(ok("/Volumes/Univocal/Univocal.app"))
+        XCTAssertFalse(ok("/Users/me/workspace/univocal/build/test/Univocal.app"))
+        XCTAssertFalse(ok("/private/tmp/x/installed/Univocal.app"))
+    }
+
+    func testPreferredAppURLPicksTheNewestInstalledCopy() throws {
+        let apps = dir.appendingPathComponent("Applications")
+        let old = try makeApp(in: apps.appendingPathComponent("Old"), version: "0.3.10")
+        let new = try makeApp(in: apps, version: "0.3.32")
+        let hidden = try makeApp(in: apps, name: ".Univocal-previous.app", version: "9.9.9")
+        let build = try makeApp(in: dir.appendingPathComponent("build"), version: "9.9.9")
+        let gone = apps.appendingPathComponent("Gone/Univocal.app")
+        let pick = { UnivocalLocator.preferredAppURL($0, version: UnivocalLocator.appVersion(at:)) }
+        XCTAssertEqual(pick([hidden, old, build, gone, new]), new)
+        XCTAssertEqual(pick([old]), old)
+        XCTAssertNil(pick([hidden, build, gone]))
+    }
+
+    func testVersionComparison() {
+        XCTAssertTrue(UnivocalLocator.isVersion("0.3.29", atLeast: "0.3.29"))
+        XCTAssertTrue(UnivocalLocator.isVersion("0.3.100", atLeast: "0.3.29"))
+        XCTAssertTrue(UnivocalLocator.isVersion("0.4", atLeast: "0.3.29"))
+        XCTAssertTrue(UnivocalLocator.isVersion("1.0", atLeast: "0.3.29"))
+        XCTAssertFalse(UnivocalLocator.isVersion("0.3.28", atLeast: "0.3.29"))
+        XCTAssertFalse(UnivocalLocator.isVersion("0.3", atLeast: "0.3.29"))
+        XCTAssertTrue(UnivocalLocator.isVersion("0.3.29b2", atLeast: "0.3.29"))
+    }
+
+    private func makeApp(in folder: URL, name: String = "Univocal.app", version: String) throws -> URL {
+        let app = folder.appendingPathComponent(name)
+        let contents = app.appendingPathComponent("Contents")
+        try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
+        let info: [String: Any] = ["CFBundleIdentifier": "com.univocal.app", "CFBundleShortVersionString": version]
+        try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0)
+            .write(to: contents.appendingPathComponent("Info.plist"))
+        return app
+    }
+
     private func mode(_ path: String) throws -> mode_t {
         var st = stat()
         guard stat(path, &st) == 0 else { throw WaitTimeout(description: "stat \(path) failed") }
         return st.st_mode & 0o777
+    }
+}
+
+private final class LockedBox<T>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _value: T
+    init(_ value: T) { _value = value }
+    var value: T {
+        get { lock.lock(); defer { lock.unlock() }; return _value }
+        set { lock.lock(); _value = newValue; lock.unlock() }
     }
 }

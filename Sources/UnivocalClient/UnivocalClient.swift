@@ -497,6 +497,13 @@ public actor UnivocalClient {
             guard launchIfNeeded else {
                 throw UnivocalError(code: .notRunning, message: "Univocal is not running.")
             }
+            if let minimum = configuration.minimumServerVersion,
+               let version = UnivocalLocator.appVersion(at: appURL),
+               !UnivocalLocator.isVersion(version, atLeast: minimum) {
+                throw UnivocalError(code: .unsupportedVersion,
+                                    message: "Univocal \(version) is installed; this app needs \(minimum) or later.",
+                                    fatal: true)
+            }
             setState(.launching)
             log("launching server")
             let dl = clock.now.advanced(by: configuration.launchTimeout)

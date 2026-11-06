@@ -11,6 +11,23 @@ struct ReadAloudToolbarControls: View {
     let isDocumentReady: Bool
 
     var body: some View {
+        content
+            .popover(isPresented: noticeShown, arrowEdge: .bottom) {
+                Text(readAloud.notice ?? "")
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: 260, alignment: .leading)
+                    .padding(12)
+            }
+    }
+
+    /// The popover is up while the controller has a notice.
+    private var noticeShown: Binding<Bool> {
+        Binding(get: { readAloud.notice != nil },
+                set: { if !$0 { readAloud.dismissNotice() } })
+    }
+
+    @ViewBuilder
+    private var content: some View {
         if readAloud.status.isReading {
             Image(systemName: readAloud.status == .paused ? "speaker.fill" : "speaker.wave.2.fill")
                 .foregroundStyle(Color.accentColor)
@@ -37,17 +54,22 @@ struct ReadAloudToolbarControls: View {
     }
 
     private var title: String {
-        readAloud.status == .unavailable ? "Get Univocal" : "Read Aloud"
+        switch readAloud.status {
+        case .unavailable: return "Get Univocal"
+        case .outdated: return "Update Univocal"
+        default: return "Read Aloud"
+        }
     }
 
     private var isEnabled: Bool {
-        readAloud.status == .unavailable || readAloud.canStart(documentReady: isDocumentReady)
+        readAloud.status == .unavailable || readAloud.status == .outdated
+            || readAloud.canStart(documentReady: isDocumentReady)
     }
 
     @ViewBuilder
     private var icon: some View {
         switch readAloud.status {
-        case .unavailable:
+        case .unavailable, .outdated:
             Image(systemName: "arrow.down.circle")
         case .idle, .failed, .playing, .paused:
             Image(systemName: "speaker.wave.2")
@@ -78,9 +100,9 @@ struct ReadAloudCommands: View {
         .keyboardShortcut("r", modifiers: [.command, .shift])
         .disabled(!readAloud.canStart(documentReady: isDocumentReady))
 
-        if readAloud.status == .unavailable {
+        if readAloud.status == .unavailable || readAloud.status == .outdated {
             Divider()
-            Button("Get Univocal…") {
+            Button(readAloud.status == .outdated ? "Update Univocal…" : "Get Univocal…") {
                 readAloud.openDownloadPage()
             }
         }

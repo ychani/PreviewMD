@@ -52,6 +52,8 @@ private final class FakeBackend: ReadAloudBackend, @unchecked Sendable {
     private var appearanceContinuations: [AsyncStream<UnivocalDiscovery>.Continuation] = []
 
     var installed = true
+    /// Installed, but older than Connect's minimum.
+    var outdated = false
     /// Thrown by the next `startReading`.
     var error: Error?
     /// `startReading` waits for `release()`.
@@ -113,8 +115,9 @@ private final class FakeBackend: ReadAloudBackend, @unchecked Sendable {
     }
 
     func availability() -> UnivocalAvailability {
-        installed ? .installed(appURL: URL(fileURLWithPath: "/Applications/Univocal.app"), running: false)
-                  : .notInstalled
+        let app = URL(fileURLWithPath: "/Applications/Univocal.app")
+        if !installed { return .notInstalled }
+        return outdated ? .outdated(appURL: app, version: "0.3.10") : .installed(appURL: app, running: false)
     }
 
     func connectionStates() -> AsyncStream<UnivocalConnectionState> {
@@ -402,6 +405,56 @@ final class ReadAloudControllerTests: XCTestCase {
         await eventually {
             if case .unauthorized = controller.status { return true } else { return false }
         }
+        XCTAssertNil(controller.notice, "a revoke mid-reading pops nothing up; the button shows it")
+        XCTAssertTrue(controller.menuTitle.hasPrefix("Read Aloud — PreviewMD's access was removed"))
+    }
+
+    /// NAR-115: after a revoke, clicking the crossed-out speaker failed at
+    /// once (the SDK holds off re-asking) and nothing visible happened.
+    func testClickWhileRevokedExplainsWhy() async {
+        let session = await startPlaying()
+        session.send(.ended(.revoked, by: nil))
+        await eventually {
+            if case .unauthorized = controller.status { return true } else { return false }
+        }
+        backend.error = UnivocalError(code: .unauthorized, reason: "revoked")
+        controller.readAloud()
+        guard case .requestText(let request)? = bridge.calls.last else { return XCTFail("no requestText") }
+        controller.handle(.text(Self.text, generation: 2, request: request), from: page)
+        await eventually { controller.notice != nil }
+        XCTAssertEqual(controller.notice, "PreviewMD's access was removed in Univocal. Try again in a few minutes.")
+        XCTAssertEqual(controller.status, .unauthorized(controller.notice!))
+
+        // The next click clears it; a successful start shows nothing.
+        controller.readAloud()
+        XCTAssertNil(controller.notice)
+        guard case .requestText(let again)? = bridge.calls.last else { return XCTFail("no requestText") }
+        controller.handle(.text(Self.text, generation: 3, request: again), from: page)
+        await eventually { backend.sessions.count == 2 }
+        backend.sessions[1].send(.state(.playing, detail: nil))
+        await eventually { controller.status == .playing }
+        XCTAssertNil(controller.notice)
+    }
+
+    func testClickThatFailsShowsTheMessage() async {
+        backend.error = UnivocalError(code: .consentDenied, reason: "user")
+        controller.readAloud()
+        guard case .requestText(let request)? = bridge.calls.last else { return XCTFail("no requestText") }
+        controller.handle(.text(Self.text, generation: 1, request: request), from: page)
+        await eventually { controller.notice != nil }
+        XCTAssertEqual(controller.notice, ReadAloudController.consentMessage(reason: "user"))
+        controller.dismissNotice()
+        XCTAssertNil(controller.notice)
+    }
+
+    func testHotkeyFailureShowsNoNotice() async {
+        backend.error = UnivocalError(code: .engineError)
+        controller.hotkeySource = { .preview }
+        controller.handleReadRequest(hotkey())
+        let request = try! XCTUnwrap(lastTextRequest)
+        controller.handle(.text(Self.text, generation: 1, request: request, startOffset: 0), from: page)
+        await eventually { if case .failed = controller.status { return true } else { return false } }
+        XCTAssertNil(controller.notice)
     }
 
     func testDocumentChangeStops() async {
@@ -473,6 +526,24 @@ final class ReadAloudControllerTests: XCTestCase {
         backend.installed = true
         controller.readAloud()
         XCTAssertEqual(controller.status, .starting(nil))
+    }
+
+    /// Only an old Univocal (before Connect) is installed: offer an update,
+    /// never launch it.
+    func testOutdatedUnivocalOffersUpdate() {
+        backend.outdated = true
+        controller.refreshAvailability()
+        XCTAssertEqual(controller.status, .outdated)
+        XCTAssertFalse(controller.canStart(documentReady: true))
+        XCTAssertEqual(controller.helpText, "Read aloud needs a newer Univocal — click to get it")
+        controller.readAloud()
+        XCTAssertEqual(opened, [UnivocalLocator.downloadURL])
+        XCTAssertTrue(backend.requests.isEmpty)
+        XCTAssertFalse(bridge.calls.contains { if case .requestText = $0 { return true } else { return false } })
+
+        backend.outdated = false
+        controller.refreshAvailability()
+        XCTAssertEqual(controller.status, .idle)
     }
 
     func testAwaitingConsentThenDenied() async {

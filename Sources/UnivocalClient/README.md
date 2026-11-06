@@ -28,8 +28,12 @@ let univocal = UnivocalClient(configuration: config)
 // Before showing a "Read aloud" button:
 switch UnivocalLocator.availability(configuration: config) {
 case .notInstalled:            showGetUnivocal(UnivocalLocator.downloadURL)
+case .outdated:                showUpdateUnivocal(UnivocalLocator.downloadURL)  // set config.minimumServerVersion
 case .installed(_, let running): enableButton(launchesUnivocal: !running)
 }
+// The default locator only counts copies inside an Applications folder (not hidden,
+// not in the Trash, not on a mounted disk image) and picks the newest; a running
+// Univocal is used wherever it was started from.
 
 // On click. read() connects (launching Univocal in the background if needed),
 // runs the consent handshake the first time, then starts a session.
