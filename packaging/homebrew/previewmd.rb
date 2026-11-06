@@ -3,7 +3,7 @@
 #   shasum -a 256 dist/PreviewMD-<version>.dmg
 cask "previewmd" do
   version "0.5.0"
-  sha256 "ef5d6392343fe2d3d4381ffe7ca35cbc12c5a3a3fad9fee5bdb9138a99222c4e"
+  sha256 "f76095fe1e8df8310756daecc6d4522aee518abd9dbdf3879865434b46656cc2"
 
   url "https://github.com/ychani/PreviewMD/releases/download/v#{version}/PreviewMD-#{version}.dmg"
   name "PreviewMD"
