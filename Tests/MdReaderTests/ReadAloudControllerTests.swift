@@ -237,6 +237,9 @@ final class ReadAloudControllerTests: XCTestCase {
     private var backend: FakeBackend!
     private var bridge: FakeBridge!
     private var opened: [URL] = []
+    /// Download dialogs shown, and the button the next one answers with.
+    private var prompts: [ReadAloudController.DownloadPrompt] = []
+    private var answersDownload = true
     private var controller: ReadAloudController!
     private var page: WKWebView!
 
@@ -244,9 +247,14 @@ final class ReadAloudControllerTests: XCTestCase {
         backend = FakeBackend()
         bridge = FakeBridge()
         opened = []
+        prompts = []
+        answersDownload = true
         page = WKWebView(frame: .zero)
         controller = ReadAloudController(backend: backend, bridge: bridge, openURL: { [weak self] in
             self?.opened.append($0)
+        }, confirmDownload: { [weak self] in
+            self?.prompts.append($0)
+            return self?.answersDownload ?? false
         })
         controller.documentTitle = { "Notes.md" }
         controller.handle(.ready(highlightMode: "css-highlight"), from: page)
@@ -399,6 +407,21 @@ final class ReadAloudControllerTests: XCTestCase {
         XCTAssertEqual(controller.menuTitle, "Read Aloud — Univocal couldn't read this document")
     }
 
+    static let revokedNotice = "PreviewMD's access was removed in Univocal. To allow it again, go to Univocal ▸ Settings ▸ Connections and click Connect next to PreviewMD."
+
+    /// NAR-115: Connect in Univocal's Settings wakes PreviewMD; once that
+    /// connects, the crossed-out speaker is Read Aloud again.
+    func testWakeAfterRevokeClearsCrossedOutSpeaker() async {
+        let session = await startPlaying()
+        session.send(.ended(.revoked, by: nil))
+        await eventually {
+            if case .unauthorized = controller.status { return true } else { return false }
+        }
+        controller.handleWakeURL(requestId: "w9")
+        await eventually { controller.status == .idle }
+        XCTAssertEqual(controller.menuTitle, "Read Aloud")
+    }
+
     func testRevokedMidSessionAsksAgainLater() async {
         let session = await startPlaying()
         session.send(.ended(.revoked, by: nil))
@@ -406,7 +429,8 @@ final class ReadAloudControllerTests: XCTestCase {
             if case .unauthorized = controller.status { return true } else { return false }
         }
         XCTAssertNil(controller.notice, "a revoke mid-reading pops nothing up; the button shows it")
-        XCTAssertTrue(controller.menuTitle.hasPrefix("Read Aloud — PreviewMD's access was removed"))
+        XCTAssertEqual(controller.menuTitle, "Read Aloud — Access Removed in Univocal")
+        XCTAssertEqual(controller.helpText, Self.revokedNotice)
     }
 
     /// NAR-115: after a revoke, clicking the crossed-out speaker failed at
@@ -422,7 +446,7 @@ final class ReadAloudControllerTests: XCTestCase {
         guard case .requestText(let request)? = bridge.calls.last else { return XCTFail("no requestText") }
         controller.handle(.text(Self.text, generation: 2, request: request), from: page)
         await eventually { controller.notice != nil }
-        XCTAssertEqual(controller.notice, "PreviewMD's access was removed in Univocal. Try again in a few minutes.")
+        XCTAssertEqual(controller.notice, Self.revokedNotice)
         XCTAssertEqual(controller.status, .unauthorized(controller.notice!))
 
         // The next click clears it; a successful start shows nothing.
@@ -518,7 +542,15 @@ final class ReadAloudControllerTests: XCTestCase {
         controller.refreshAvailability()
         XCTAssertEqual(controller.status, .unavailable)
         XCTAssertFalse(controller.canStart(documentReady: true))
+        // NAR-115: a dialog says why first; Cancel opens nothing.
+        answersDownload = false
         controller.readAloud()
+        XCTAssertEqual(prompts, [.missing])
+        XCTAssertEqual(prompts.first?.message, "Read aloud requires the Univocal app.")
+        XCTAssertEqual(opened, [])
+        answersDownload = true
+        controller.readAloud()
+        XCTAssertEqual(prompts, [.missing, .missing])
         XCTAssertEqual(opened, [UnivocalLocator.downloadURL])
         XCTAssertFalse(bridge.calls.contains { if case .requestText = $0 { return true } else { return false } })
 
@@ -536,6 +568,12 @@ final class ReadAloudControllerTests: XCTestCase {
         XCTAssertEqual(controller.status, .outdated)
         XCTAssertFalse(controller.canStart(documentReady: true))
         XCTAssertEqual(controller.helpText, "Read aloud needs a newer Univocal — click to get it")
+        answersDownload = false
+        controller.readAloud()
+        XCTAssertEqual(prompts, [.outdated])
+        XCTAssertEqual(prompts.first?.message, "Read aloud requires Univocal 0.3.29 or later.")
+        XCTAssertEqual(opened, [])
+        answersDownload = true
         controller.readAloud()
         XCTAssertEqual(opened, [UnivocalLocator.downloadURL])
         XCTAssertTrue(backend.requests.isEmpty)

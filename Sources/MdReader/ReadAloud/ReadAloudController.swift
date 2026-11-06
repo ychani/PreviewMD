@@ -106,9 +106,31 @@ final class ReadAloudController: ObservableObject {
 
     var hotkeySource: () -> HotkeySource = { .noDocument }
 
+    /// Why Read Aloud can't run yet: shown in a dialog before the download
+    /// page opens.
+    enum DownloadPrompt: Equatable {
+        case missing, outdated
+
+        var message: String {
+            switch self {
+            case .missing: return "Read aloud requires the Univocal app."
+            case .outdated: return "Read aloud requires Univocal 0.3.29 or later."
+            }
+        }
+
+        var detail: String {
+            switch self {
+            case .missing: return "Download Univocal, then click Read Aloud again."
+            case .outdated: return "Download the latest Univocal, then click Read Aloud again."
+            }
+        }
+    }
+
     let bridge: ReadAloudWebBridging
     private let backend: ReadAloudBackend
     private let openURL: (URL) -> Void
+    /// Asks whether to open the download page; true for Download.
+    private let confirmDownload: (DownloadPrompt) -> Bool
 
     /// Bumped whenever a session (or an attempt) is abandoned; work started
     /// for an older token is dropped.
@@ -154,11 +176,13 @@ final class ReadAloudController: ObservableObject {
     init(
         backend: ReadAloudBackend = UnivocalBackend(),
         bridge: ReadAloudWebBridging? = nil,
-        openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) }
+        openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) },
+        confirmDownload: @escaping (DownloadPrompt) -> Bool = ReadAloudController.runDownloadAlert
     ) {
         self.backend = backend
         self.bridge = bridge ?? ReadAloudWebBridge()
         self.openURL = openURL
+        self.confirmDownload = confirmDownload
         status = Self.status(for: backend.availability())
         // The user may have just installed (or removed) Univocal.
         activationObserver = NotificationCenter.default.addObserver(
@@ -176,7 +200,8 @@ final class ReadAloudController: ObservableObject {
     // MARK: - Actions
 
     /// The Read Aloud command (toolbar, ⇧⌘R): starts reading the preview
-    /// from the top; without Univocal installed, opens its download page.
+    /// from the top; without Univocal (or with one too old), says so in a
+    /// dialog that offers the download page.
     /// Does nothing while a reading is starting or running — Univocal's pill
     /// (or its ⌥⇧R) pauses, skips and stops it.
     func readAloud() {
@@ -185,7 +210,7 @@ final class ReadAloudController: ObservableObject {
             notice = nil
             refreshAvailability(force: true)
             if status == .unavailable || status == .outdated {
-                openDownloadPage()
+                if confirmDownload(status == .outdated ? .outdated : .missing) { openDownloadPage() }
             } else {
                 awaitingClickOutcome = true
                 start()
@@ -240,6 +265,16 @@ final class ReadAloudController: ObservableObject {
 
     func openDownloadPage() {
         openURL(UnivocalLocator.downloadURL)
+    }
+
+    /// The download dialog: Download (default) or Cancel.
+    static func runDownloadAlert(_ prompt: DownloadPrompt) -> Bool {
+        let alert = NSAlert()
+        alert.messageText = prompt.message
+        alert.informativeText = prompt.detail
+        alert.addButton(withTitle: "Download")
+        alert.addButton(withTitle: "Cancel")
+        return alert.runModal() == .alertFirstButtonReturn
     }
 
     /// Re-checks whether Univocal is installed. Leaves a running session and
@@ -307,8 +342,14 @@ final class ReadAloudController: ObservableObject {
     /// Univocal opened PreviewMD's wake URL (SPEC §16.5): connect and name
     /// the request, which then arrives on `readRequests()`. No window,
     /// document or activation changes.
+    /// After a revoke, this is Univocal's Connect button being clicked: once
+    /// connected, the crossed-out speaker goes back to Read Aloud.
     func handleWakeURL(requestId: String) {
-        Task { [backend] in try? await backend.connectForWake(requestId: requestId) }
+        Task { [weak self, backend] in
+            guard (try? await backend.connectForWake(requestId: requestId)) != nil else { return }
+            guard let self, case .unauthorized = self.status else { return }
+            self.status = .idle
+        }
     }
 
     /// Answers one hotkey request: a `read` from the preview or the editor,
@@ -716,7 +757,7 @@ final class ReadAloudController: ObservableObject {
     // MARK: - Text
 
     private static let revokedMessage =
-        "PreviewMD's access was removed in Univocal. Try again in a few minutes."
+        "PreviewMD's access was removed in Univocal. To allow it again, go to Univocal ▸ Settings ▸ Connections and click Connect next to PreviewMD."
 
     static func consentMessage(reason: String?) -> String {
         switch reason {
@@ -749,6 +790,8 @@ final class ReadAloudController: ObservableObject {
         switch status {
         case .awaitingConsent: return "Waiting for Approval in Univocal…"
         case .playing, .paused: return "Reading Aloud — Controls in Univocal"
+        // Too long for a menu; the popover and tooltip say where to fix it.
+        case .unauthorized(Self.revokedMessage): return "Read Aloud — Access Removed in Univocal"
         case .failed(let message), .unauthorized(let message): return "Read Aloud — \(message)"
         default: return "Read Aloud"
         }
