@@ -237,9 +237,6 @@ final class ReadAloudControllerTests: XCTestCase {
     private var backend: FakeBackend!
     private var bridge: FakeBridge!
     private var opened: [URL] = []
-    /// Download dialogs shown, and the button the next one answers with.
-    private var prompts: [ReadAloudController.DownloadPrompt] = []
-    private var answersDownload = true
     private var controller: ReadAloudController!
     private var page: WKWebView!
 
@@ -247,14 +244,9 @@ final class ReadAloudControllerTests: XCTestCase {
         backend = FakeBackend()
         bridge = FakeBridge()
         opened = []
-        prompts = []
-        answersDownload = true
         page = WKWebView(frame: .zero)
         controller = ReadAloudController(backend: backend, bridge: bridge, openURL: { [weak self] in
             self?.opened.append($0)
-        }, confirmDownload: { [weak self] in
-            self?.prompts.append($0)
-            return self?.answersDownload ?? false
         })
         controller.documentTitle = { "Notes.md" }
         controller.handle(.ready(highlightMode: "css-highlight"), from: page)
@@ -542,21 +534,26 @@ final class ReadAloudControllerTests: XCTestCase {
         controller.refreshAvailability()
         XCTAssertEqual(controller.status, .unavailable)
         XCTAssertFalse(controller.canStart(documentReady: true))
-        // NAR-115: a dialog says why first; Cancel opens nothing.
-        answersDownload = false
+        // NAR-115: the toolbar popover says why first; dismissing it opens
+        // nothing, its Download button opens the download page.
         controller.readAloud()
-        XCTAssertEqual(prompts, [.missing])
-        XCTAssertEqual(prompts.first?.message, "Read aloud requires the Univocal app.")
+        XCTAssertEqual(controller.noticeDownload, .missing)
+        XCTAssertEqual(controller.notice, "Read aloud requires the Univocal app.")
         XCTAssertEqual(opened, [])
-        answersDownload = true
+        controller.dismissNotice()
+        XCTAssertNil(controller.noticeDownload)
+        XCTAssertEqual(opened, [])
         controller.readAloud()
-        XCTAssertEqual(prompts, [.missing, .missing])
+        controller.downloadFromNotice()
+        XCTAssertNil(controller.notice)
+        XCTAssertNil(controller.noticeDownload)
         XCTAssertEqual(opened, [UnivocalLocator.downloadURL])
         XCTAssertFalse(bridge.calls.contains { if case .requestText = $0 { return true } else { return false } })
 
-        // Installed meanwhile: the next click reads.
+        // Installed meanwhile: the next click reads, with no popover.
         backend.installed = true
         controller.readAloud()
+        XCTAssertNil(controller.notice)
         XCTAssertEqual(controller.status, .starting(nil))
     }
 
@@ -568,13 +565,11 @@ final class ReadAloudControllerTests: XCTestCase {
         XCTAssertEqual(controller.status, .outdated)
         XCTAssertFalse(controller.canStart(documentReady: true))
         XCTAssertEqual(controller.helpText, "Read aloud needs Univocal 0.3.29 or later. Click to get it.")
-        answersDownload = false
         controller.readAloud()
-        XCTAssertEqual(prompts, [.outdated])
-        XCTAssertEqual(prompts.first?.message, "Read aloud requires Univocal 0.3.29 or later.")
+        XCTAssertEqual(controller.noticeDownload, .outdated)
+        XCTAssertEqual(controller.notice, "Read aloud requires Univocal 0.3.29 or later.")
         XCTAssertEqual(opened, [])
-        answersDownload = true
-        controller.readAloud()
+        controller.downloadFromNotice()
         XCTAssertEqual(opened, [UnivocalLocator.downloadURL])
         XCTAssertTrue(backend.requests.isEmpty)
         XCTAssertFalse(bridge.calls.contains { if case .requestText = $0 { return true } else { return false } })

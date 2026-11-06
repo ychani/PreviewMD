@@ -71,7 +71,13 @@ final class ReadAloudController: ObservableObject {
     /// popover on the toolbar button until dismissed. Without it a click
     /// that fails at once (e.g. while access is revoked) looks like nothing
     /// happened: the message was only in the tooltip.
-    @Published var notice: String?
+    @Published var notice: String? {
+        didSet { if notice == nil { noticeDownload = nil } }
+    }
+
+    /// Set when the notice is about a missing or too-old Univocal: the
+    /// popover then offers its download page.
+    @Published private(set) var noticeDownload: DownloadPrompt?
 
     /// The Read Aloud command was used and its outcome is not known yet.
     private var awaitingClickOutcome = false
@@ -106,8 +112,8 @@ final class ReadAloudController: ObservableObject {
 
     var hotkeySource: () -> HotkeySource = { .noDocument }
 
-    /// Why Read Aloud can't run yet: shown in a dialog before the download
-    /// page opens.
+    /// Why Read Aloud can't run yet: shown in the toolbar popover, which
+    /// offers the download page.
     enum DownloadPrompt: Equatable {
         case missing, outdated
 
@@ -129,8 +135,6 @@ final class ReadAloudController: ObservableObject {
     let bridge: ReadAloudWebBridging
     private let backend: ReadAloudBackend
     private let openURL: (URL) -> Void
-    /// Asks whether to open the download page; true for Download.
-    private let confirmDownload: (DownloadPrompt) -> Bool
 
     /// Bumped whenever a session (or an attempt) is abandoned; work started
     /// for an older token is dropped.
@@ -176,13 +180,11 @@ final class ReadAloudController: ObservableObject {
     init(
         backend: ReadAloudBackend = UnivocalBackend(),
         bridge: ReadAloudWebBridging? = nil,
-        openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) },
-        confirmDownload: @escaping (DownloadPrompt) -> Bool = ReadAloudController.runDownloadAlert
+        openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) }
     ) {
         self.backend = backend
         self.bridge = bridge ?? ReadAloudWebBridge()
         self.openURL = openURL
-        self.confirmDownload = confirmDownload
         status = Self.status(for: backend.availability())
         // The user may have just installed (or removed) Univocal.
         activationObserver = NotificationCenter.default.addObserver(
@@ -200,8 +202,8 @@ final class ReadAloudController: ObservableObject {
     // MARK: - Actions
 
     /// The Read Aloud command (toolbar, ⇧⌘R): starts reading the preview
-    /// from the top; without Univocal (or with one too old), says so in a
-    /// dialog that offers the download page.
+    /// from the top; without Univocal (or with one too old), says so in the
+    /// toolbar popover, which offers the download page.
     /// Does nothing while a reading is starting or running — Univocal's pill
     /// (or its ⌥⇧R) pauses, skips and stops it.
     func readAloud() {
@@ -210,7 +212,9 @@ final class ReadAloudController: ObservableObject {
             notice = nil
             refreshAvailability(force: true)
             if status == .unavailable || status == .outdated {
-                if confirmDownload(status == .outdated ? .outdated : .missing) { openDownloadPage() }
+                let prompt: DownloadPrompt = status == .outdated ? .outdated : .missing
+                noticeDownload = prompt
+                notice = prompt.message
             } else {
                 awaitingClickOutcome = true
                 start()
@@ -267,14 +271,10 @@ final class ReadAloudController: ObservableObject {
         openURL(UnivocalLocator.downloadURL)
     }
 
-    /// The download dialog: Download (default) or Cancel.
-    static func runDownloadAlert(_ prompt: DownloadPrompt) -> Bool {
-        let alert = NSAlert()
-        alert.messageText = prompt.message
-        alert.informativeText = prompt.detail
-        alert.addButton(withTitle: "Download")
-        alert.addButton(withTitle: "Cancel")
-        return alert.runModal() == .alertFirstButtonReturn
+    /// The popover's Download button.
+    func downloadFromNotice() {
+        notice = nil
+        openDownloadPage()
     }
 
     /// Re-checks whether Univocal is installed. Leaves a running session and

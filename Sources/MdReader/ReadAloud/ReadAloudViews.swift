@@ -13,11 +13,34 @@ struct ReadAloudToolbarControls: View {
     var body: some View {
         content
             .popover(isPresented: noticeShown, arrowEdge: .bottom) {
-                Text(readAloud.notice ?? "")
-                    .fixedSize(horizontal: false, vertical: true)
+                noticeContent
                     .frame(width: 260, alignment: .leading)
                     .padding(12)
             }
+    }
+
+    /// Why the click didn't read; for a missing or too-old Univocal, with
+    /// a Download button.
+    @ViewBuilder
+    private var noticeContent: some View {
+        if let prompt = readAloud.noticeDownload {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(prompt.message)
+                    .fontWeight(.semibold)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(prompt.detail)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Spacer()
+                    Button("Download") { readAloud.downloadFromNotice() }
+                        .keyboardShortcut(.defaultAction)
+                }
+            }
+        } else {
+            Text(readAloud.notice ?? "")
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     /// The popover is up while the controller has a notice.
