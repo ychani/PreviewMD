@@ -805,7 +805,7 @@ final class ReadAloudController: ObservableObject {
     var helpText: String {
         switch status {
         case .unavailable: return "Read aloud needs Univocal — click to get it"
-        case .outdated: return "Read aloud needs a newer Univocal — click to get it"
+        case .outdated: return "Read aloud needs Univocal 0.3.29 or later. Click to get it."
         case .idle: return "Read Aloud"
         case .starting(let detail): return detail ?? "Starting…"
         case .awaitingConsent: return "Waiting for approval in Univocal…"

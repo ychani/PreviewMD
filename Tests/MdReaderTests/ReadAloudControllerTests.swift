@@ -567,7 +567,7 @@ final class ReadAloudControllerTests: XCTestCase {
         controller.refreshAvailability()
         XCTAssertEqual(controller.status, .outdated)
         XCTAssertFalse(controller.canStart(documentReady: true))
-        XCTAssertEqual(controller.helpText, "Read aloud needs a newer Univocal — click to get it")
+        XCTAssertEqual(controller.helpText, "Read aloud needs Univocal 0.3.29 or later. Click to get it.")
         answersDownload = false
         controller.readAloud()
         XCTAssertEqual(prompts, [.outdated])

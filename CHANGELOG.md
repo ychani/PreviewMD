@@ -7,7 +7,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow 
 
 ## [0.5.0] — 2026-11-03
 
-Read Aloud reads the open document through Univocal 0.3.29 or later, highlighting the current word and sentence as it goes. Start it from the toolbar or Edit ▸ Read Aloud (⇧⌘R). The first time, allow PreviewMD in Univocal. Text is sent to Univocal on the same Mac only when you start reading.
+Univocal is one app for all the text you read and write. Read Aloud reads the open document through Univocal 0.3.29 or later, highlighting the current word and sentence as it goes. Start it from the toolbar or Edit ▸ Read Aloud (⇧⌘R). The first time, allow PreviewMD in Univocal. Text is sent to Univocal on the same Mac only when you start reading.
 
 ### Added
 - **Read Aloud** with word-by-word highlighting through
@@ -21,7 +21,8 @@ Read Aloud reads the open document through Univocal 0.3.29 or later, highlightin
   matter are skipped. Edits in Split view (or a reload from disk) restart
   reading at the current sentence; switching documents or to Edit view
   stops it. Univocal asks once for permission; without Univocal installed
-  the button links to its download page.
+  the button says Read Aloud requires Univocal and offers its download page.
+  If an older version of Univocal is installed, the button offers an update.
 - **Univocal's ⌥⇧R reads in PreviewMD** (Univocal Connect hotkey routing):
   with PreviewMD in front, Univocal's own read shortcut reads the open
   document here, with the same highlighting, instead of in Univocal's panel.
