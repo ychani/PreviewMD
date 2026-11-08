@@ -5,6 +5,36 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow 
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-11-03
+
+Univocal is one app for all the text you read and write. Read Aloud reads the open document through Univocal 0.3.29 or later, highlighting the current word and sentence as it goes. Start it from the toolbar or Edit ▸ Read Aloud (⇧⌘R). The first time, allow PreviewMD in Univocal. Text is sent to Univocal on the same Mac only when you start reading.
+
+### Added
+- **Read Aloud** with word-by-word highlighting through
+  [Univocal](https://univocalapp.com) (Univocal Connect protocol): the toolbar
+  button or Edit ▸ Read Aloud (⇧⌘R) reads the preview, highlights the current
+  word and sentence, and follows them as they scroll out of view (a manual
+  scroll pauses following for a few seconds). Click a word while reading to
+  jump there. Univocal's floating controls pause, skip sentences, change
+  speed or voice, and stop; PreviewMD has no pause or stop of its own — while
+  it reads, the toolbar button shows a reading state and ⇧⌘R does nothing. Code blocks, diagrams, images and front
+  matter are skipped. Edits in Split view (or a reload from disk) restart
+  reading at the current sentence; switching documents or to Edit view
+  stops it. Univocal asks once for permission. If Univocal isn't installed,
+  clicking the button shows a popover with a Download option. If an older
+  version of Univocal is installed, the button offers an update.
+- **Univocal's ⌥⇧R reads in PreviewMD** (Univocal Connect hotkey routing):
+  with PreviewMD in front, Univocal's own read shortcut reads the open
+  document here, with the same highlighting, instead of in Univocal's panel.
+  In the preview it starts at the selection, else at the first block fully
+  on screen; in the editor (Edit view, or Split view with the editor
+  focused) it reads the Markdown source from the selection or the caret,
+  highlights it in the editor, and stops when you type. Press it again to
+  pause or resume. Once allowed, PreviewMD connects quietly whenever
+  Univocal is running; it never starts Univocal or asks for permission on
+  its own. Registers the `previewmd://` URL scheme, which Univocal uses only
+  to wake PreviewMD — it never opens or raises a window.
+
 ### Docs
 - Reorganize the README around download and setup, clarify Quick Look versus app features, and simplify privacy guidance.
 - Show synchronized dark-mode Quick Look recordings side by side, comparing plain Markdown with PreviewMD formatting.

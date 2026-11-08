@@ -91,6 +91,8 @@ Relative images and Obsidian image embeds (`![[image.png]]`) are resolved beside
 
 Documents are rendered locally with bundled libraries. PreviewMD has no telemetry, accounts, or automatic update checks.
 
+Read Aloud sends the document's text to Univocal on the same Mac through a local Unix socket. This transfer does not use the network. Text is sent only after you allow PreviewMD in Univocal and start reading, either from PreviewMD or with Univocal's read shortcut (⌥⇧R) while PreviewMD is in front. You can revoke access in Univocal Settings.
+
 **Remote images are blocked by default.** In the app, choosing **Load remote images** fetches them from their hosts for that document. This choice is never saved. Quick Look always blocks remote images. Links open in your browser only when clicked.
 
 <details>
@@ -167,6 +169,7 @@ defaults delete com.preview-md.app 2>/dev/null || true
 | ⌥⌘O | Add Folder to Workspace… |
 | ⌘S | Save |
 | ⌘1 / ⌘2 / ⌘3 | Preview / Split / Edit |
+| ⇧⌘R | Read Aloud (with Univocal) |
 | ⌘F | Find in preview |
 | ⌘G / ⇧⌘G | Next / previous match |
 | ⌘+ / ⌘− / ⌘0 | Zoom in / zoom out / actual size |
@@ -176,9 +179,9 @@ defaults delete com.preview-md.app 2>/dev/null || true
 
 </details>
 
-## Planned
+## Read Aloud
 
-Read-aloud with word highlighting via [Univocal](https://univocalapp.com/go/previewmd) is planned and is **not included in v0.4.0**. [Suggest a feature](https://github.com/ychani/PreviewMD/issues).
+Univocal is one app for all the text you read and write. Read Aloud is included in PreviewMD 0.5.0 and requires [Univocal](https://univocalapp.com/go/previewmd) 0.3.29 or later. Start it from the toolbar or Edit ▸ Read Aloud (⇧⌘R) to hear the open document with word and sentence highlighting. Use Univocal's floating controls to pause, skip, change speed or voice, and stop. [Suggest a feature](https://github.com/ychani/PreviewMD/issues).
 
 <details>
 <summary>Build from source</summary>
