@@ -34,6 +34,10 @@ Download the notarized `PreviewMD-<version>.dmg` from the [latest release](https
 brew install --cask ychani/tap/previewmd
 ```
 
+Keep the full name `ychani/tap/previewmd`. Homebrew 7 and later only load casks from third-party taps you trust, and installing or upgrading by full name trusts this cask. A plain `brew install --cask previewmd` after `brew tap ychani/tap` fails with "Refusing to load cask … from untrusted tap".
+
+Installed with Homebrew before version 7? Run `brew upgrade --cask ychani/tap/previewmd` once. Until you do, `brew upgrade` skips PreviewMD without a warning.
+
 ### Turn on Quick Look
 
 1. **Launch PreviewMD once** from Applications to register its Quick Look extension.
