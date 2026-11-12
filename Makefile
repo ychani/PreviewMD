@@ -55,7 +55,7 @@ endif
 CODESIGN          := codesign --sign "$(SIGN_IDENTITY)" --force --options runtime $(TIMESTAMP_FLAG)
 
 .PHONY: all build test test-old-macos test-old-macos-first-run test-old-macos-update run app appex sign clean install-ql \
-        check-notary notarize-app dmg notarize release-notes release
+        check-notary notarize-app dmg notarize release-notes release ship
 
 all: app
 
@@ -163,23 +163,18 @@ test-old-macos-update:
 # staple → spctl) → dmg (staging dir + Applications link → sign) → notarize
 # (submit → staple → spctl) → release (notes from CHANGELOG → draft GH release).
 
-# Fails before any build when notarization cannot succeed. The profile check
-# asks notarytool itself (one quick request to Apple), since the keychain item's
-# layout differs between API-key and Apple ID profiles; set
-# NOTARY_SKIP_PROFILE_CHECK=1 to skip it.
+# Releases are signed by the release signer (scripts/ship.sh), never from this
+# account: it holds no Developer ID or notarization key. The targets that
+# notarized here (notarize-app, dmg, notarize, release) now stop at this check.
 check-notary:
-	@if [ "$(SIGN_IDENTITY)" = "-" ]; then \
-		echo "error: notarization needs a Developer ID, but SIGN_IDENTITY is ad-hoc (-)."; \
-		echo "       Set SIGN_IDENTITY=\"Developer ID Application: Name (TEAMID)\" and retry."; \
-		exit 1; \
-	fi
-	@if [ -z "$(NOTARY_SKIP_PROFILE_CHECK)" ] && \
-	   ! xcrun notarytool history --keychain-profile "$(NOTARY_PROFILE)" >/dev/null 2>&1; then \
-		echo "error: notarytool keychain profile '$(NOTARY_PROFILE)' not found or not working."; \
-		echo "       Create it: xcrun notarytool store-credentials $(NOTARY_PROFILE) --apple-id ... --team-id ..."; \
-		echo "       (or NOTARY_PROFILE=<name>; NOTARY_SKIP_PROFILE_CHECK=1 to bypass this check)"; \
-		exit 1; \
-	fi
+	@echo "error: releases ship through the release signer: make ship (scripts/ship.sh --dry-run first)."
+	@echo "       This account holds no release keys; see CONTRIBUTING.md, Releasing."
+	@exit 1
+
+# Signs through the release signer after Yun's approval. ARGS=--dry-run,
+# ARGS=--publish or ARGS=--publish-only; see scripts/ship.sh.
+ship:
+	scripts/ship.sh $(ARGS)
 
 # $(call notarize_file,<path>): submit, wait, and fail unless Accepted.
 define notarize_file

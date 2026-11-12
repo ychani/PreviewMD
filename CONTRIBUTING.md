@@ -91,15 +91,14 @@ Swift module names stay `MdReader*` for identifier-safe imports; the user-facing
 
 ## Releasing (maintainers)
 
-`make release` builds, signs, notarizes, and staples the app, packages it into a DMG that is itself signed, notarized, and stapled, and creates a **draft** GitHub release (`v<version>`) whose notes are this version's section of [CHANGELOG.md](CHANGELOG.md). Review and publish the draft on GitHub. It needs:
+Releases are signed and notarized by the **release signer**, a separate `releaser` macOS account that holds the Developer ID and the notarization key and signs only after the maintainer approves on the phone. The development account holds no release keys.
 
-- `SIGN_IDENTITY="Developer ID Application: Name (TEAMID)"`
-- a notarytool keychain profile named `previewmd` (`xcrun notarytool store-credentials previewmd …`; override with `NOTARY_PROFILE`)
-- the `gh` CLI, authenticated
+- `make ship ARGS=--dry-run` (or `scripts/ship.sh --dry-run`): tests, a universal build, real signing and notarization, nothing kept.
+- `make ship ARGS=--publish`: signs, checks the result (checksums, Gatekeeper on the DMG and on the app inside it), and creates a **draft** GitHub release (`v<version>`) whose notes are this version's section of [CHANGELOG.md](CHANGELOG.md). Review and publish the draft on GitHub. `make ship` alone stops after signing; `ARGS=--publish-only` drafts later.
 
-The version comes from `CFBundleShortVersionString` in `packaging/Info.plist`. Individual steps: `make notarize-app`, `make dmg`, `make notarize`, `make release-notes`. See the Distribution section of the [Makefile](Makefile).
+Release from a clean `develop` checkout. The version comes from `CFBundleShortVersionString` in `packaging/Info.plist`. `make notarize-app`, `make dmg`, `make notarize` and `make release` no longer run.
 
-After publishing, update the Homebrew cask: in [packaging/homebrew/previewmd.rb](packaging/homebrew/previewmd.rb), bump `version` and set `sha256` to the output of `shasum -a 256 dist/PreviewMD-<version>.dmg`, then copy it to `Casks/previewmd.rb` in the `ychani/homebrew-tap` repository.
+After publishing, update the Homebrew cask: in [packaging/homebrew/previewmd.rb](packaging/homebrew/previewmd.rb), bump `version` and set `sha256` to the value `scripts/ship.sh --publish` prints, then copy it to `Casks/previewmd.rb` in the `ychani/homebrew-tap` repository.
 
 ## License
 
