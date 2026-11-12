@@ -26,7 +26,8 @@ APP="$ROOT/dist/$APP_NAME.app"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' packaging/Info.plist)"
 SIGNER=/usr/local/libexec/narnar-release/release.sh
 SHARED=/Users/Shared/narnar-release
-WAIT_MINUTES=60   # 15 for the tap, then notarization; Apple is sometimes slow
+TAP_WAIT_MINUTES=30   # the signer keeps the request open 4 hours; we stop watching sooner
+SIGN_WAIT_MINUTES=90  # after the tap: signing and notarization; Apple is sometimes slow
 
 DRY=0; PUBLISH=0; PUBLISH_ONLY=0
 for arg in "$@"; do
@@ -141,7 +142,7 @@ JOB="$(printf '%s\n' "$OUT" | sed -n 's/^Job \([A-Za-z0-9._-]*\) is waiting.*/\1
 # ── 5. Wait for Yun's tap and the signing ────────────────────────────────
 say "Waiting for Yun to approve on the phone, then for signing and notarization"
 STATUS="$SHARED/jobs/$JOB.status"
-deadline=$(( $(date +%s) + WAIT_MINUTES * 60 )); last=""
+deadline=$(( $(date +%s) + TAP_WAIT_MINUTES * 60 )); last=""; tapped=0
 while :; do
     # Status line: "<time> <state> [detail]"
     state="$(awk '{print $2}' "$STATUS" 2>/dev/null || true)"
@@ -153,7 +154,28 @@ while :; do
             grep '^\[' "$SHARED/logs/$JOB.log" | tail -8 >&2
             die "signing ended: $state. Nothing was signed for release." ;;
     esac
-    [ "$(date +%s)" -lt "$deadline" ] || die "still '$state' after $WAIT_MINUTES min; check $SHARED/logs/$JOB.log"
+    case "$state" in
+        checked|waiting_approval) ;;
+        *) [ "$tapped" = 1 ] || { tapped=1; deadline=$(( $(date +%s) + SIGN_WAIT_MINUTES * 60 )); } ;;
+    esac
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+        if [ "$tapped" = 0 ]; then
+            # Not an error: the request stays open on Yun's phone for 4 hours,
+            # and the signer finishes on its own after the tap.
+            echo
+            echo "Yun hasn't tapped yet. The request stays open until the time on the phone"
+            echo "notification (4 hours from staging); the signer finishes by itself after the tap."
+            echo "  Progress: $STATUS"
+            if [ "$DRY" = 1 ]; then
+                echo "  Dry run: when it says done, the report is in $SHARED/outbox/$APP_ID/$VERSION-dry-run/"
+            else
+                echo "  When it says done: scripts/ship.sh --publish-only (after the release card) drafts the GitHub release."
+            fi
+            echo "  To withdraw it: sudo -n -u releaser $SIGNER cancel --job $JOB"
+            exit 3
+        fi
+        die "still '$state' $SIGN_WAIT_MINUTES min after the tap; check $SHARED/logs/$JOB.log"
+    fi
     sleep 10
 done
 
