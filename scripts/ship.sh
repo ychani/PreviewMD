@@ -26,7 +26,7 @@ APP="$ROOT/dist/$APP_NAME.app"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' packaging/Info.plist)"
 SIGNER=/usr/local/libexec/narnar-release/release.sh
 SHARED=/Users/Shared/narnar-release
-TAP_WAIT_MINUTES=30   # the signer keeps the request open 4 hours; we stop watching sooner
+TAP_WAIT_MINUTES=30   # the signer keeps the request open 12 hours; we stop watching sooner
 SIGN_WAIT_MINUTES=90  # after the tap: signing and notarization; Apple is sometimes slow
 
 DRY=0; PUBLISH=0; PUBLISH_ONLY=0
@@ -152,6 +152,7 @@ while :; do
         failed|rejected|expired|cancelled)
             echo "--- last lines of $SHARED/logs/$JOB.log:" >&2
             grep '^\[' "$SHARED/logs/$JOB.log" | tail -8 >&2
+            [ "$state" = expired ] && echo "To ask Yun again for this same build (within 7 days): sudo -n -u releaser $SIGNER retry --job $JOB" >&2
             die "signing ended: $state. Nothing was signed for release." ;;
     esac
     case "$state" in
@@ -160,11 +161,11 @@ while :; do
     esac
     if [ "$(date +%s)" -ge "$deadline" ]; then
         if [ "$tapped" = 0 ]; then
-            # Not an error: the request stays open on Yun's phone for 4 hours,
+            # Not an error: the request stays open on Yun's phone for 12 hours,
             # and the signer finishes on its own after the tap.
             echo
             echo "Yun hasn't tapped yet. The request stays open until the time on the phone"
-            echo "notification (4 hours from staging); the signer finishes by itself after the tap."
+            echo "notification (12 hours from staging); the signer finishes by itself after the tap."
             echo "  Progress: $STATUS"
             if [ "$DRY" = 1 ]; then
                 echo "  Dry run: when it says done, the report is in $SHARED/outbox/$APP_ID/$VERSION-dry-run/"
@@ -172,6 +173,7 @@ while :; do
                 echo "  When it says done: scripts/ship.sh --publish-only (after the release card) drafts the GitHub release."
             fi
             echo "  To withdraw it: sudo -n -u releaser $SIGNER cancel --job $JOB"
+            echo "  If it expires: sudo -n -u releaser $SIGNER retry --job $JOB asks Yun again."
             exit 3
         fi
         die "still '$state' $SIGN_WAIT_MINUTES min after the tap; check $SHARED/logs/$JOB.log"
