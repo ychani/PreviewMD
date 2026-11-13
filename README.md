@@ -212,3 +212,5 @@ Bug reports and focused pull requests are welcome. See [CONTRIBUTING.md](CONTRIB
 
 
 MIT © 2026 NarNar Labs. See [LICENSE](LICENSE). Bundled third-party JavaScript ([marked](https://github.com/markedjs/marked), [DOMPurify](https://github.com/cure53/DOMPurify), [Mermaid](https://github.com/mermaid-js/mermaid)) is used under its own licenses. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+<a href="https://macnative.io/apps/previewmd?utm_source=macnative-badge&utm_medium=referral" target="_blank" rel="noopener"><picture><source media="(prefers-color-scheme: dark)" srcset="https://macnative.io/badge?kind=listed&theme=dark&slug=previewmd"><img src="https://macnative.io/badge?kind=listed&theme=default&slug=previewmd" alt="Listed on MacNative" width="212" height="58"></picture></a>
