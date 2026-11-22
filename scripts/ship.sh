@@ -131,8 +131,53 @@ ARCHS="$(lipo -archs "$APP/Contents/MacOS/$APP_NAME" | tr ' ' '\n' | sort | tr '
 
 # ── 4. Hand it to the signer ─────────────────────────────────────────────
 say "Sending the app to the release signer"
+# What changed, for Yun's phone: this version's headlines from CHANGELOG.md,
+# one short line per entry. The signer shows them above its own checked lines
+# (marked as not checked) and cuts them to 8 lines.
+release_notes() {
+    /usr/bin/python3 -I - "$ROOT/CHANGELOG.md" "$VERSION" <<'PY'
+import re, sys
+path, ver = sys.argv[1:3]
+try:
+    lines = open(path, encoding="utf-8").read().split("\n")
+except OSError:
+    sys.exit(0)
+head = re.compile(r"^## \[?" + re.escape(ver) + r"\]?(?![\w.])")
+sec, on = [], False
+for l in lines:
+    if l.startswith("## "):
+        if on: break
+        on = bool(head.match(l))
+    elif on:
+        sec.append(l)
+items, cur = [], None
+for l in sec:
+    if re.match(r"^[-*] ", l):
+        cur = [l[2:].strip()]; items.append(cur)
+    elif cur is not None and l.startswith(" ") and l.strip():
+        cur.append(l.strip())
+    else:
+        cur = None
+out = []
+for it in items:
+    t = " ".join(it)
+    m = re.match(r"\*\*(.+?)\*\*", t)
+    t = m.group(1) if m else re.split(r"(?<=[.!?])\s", t, maxsplit=1)[0]
+    t = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", t).replace("**", "").replace("`", "")
+    t = t.strip().rstrip(".:,;")
+    if len(t) > 110: t = t[:107].rstrip() + "..."
+    if t: out.append("- " + t)
+print("\n".join(out))
+PY
+}
+
 ARGS=(stage --app "$APP_ID" --version "$VERSION" --commit "$COMMIT")
 [ "$DRY" = 1 ] && ARGS+=(--dry-run)
+# Only when the installed signer knows --notes (an older one refuses it).
+if grep -q -- '--notes)' "$SIGNER" 2>/dev/null; then
+    NOTES="$(release_notes 2>/dev/null || true)"
+    [ -n "$NOTES" ] && ARGS+=(--notes "$NOTES")
+fi
 OUT="$(/usr/bin/ditto -c -k --keepParent "$APP" - | sudo -n -u releaser "$SIGNER" "${ARGS[@]}")" \
     || die "the signer refused the build (output above)"
 echo "$OUT"
@@ -170,7 +215,7 @@ while :; do
             if [ "$DRY" = 1 ]; then
                 echo "  Dry run: when it says done, the report is in $SHARED/outbox/$APP_ID/$VERSION-dry-run/"
             else
-                echo "  When it says done: scripts/ship.sh --publish-only (after the release card) drafts the GitHub release."
+                echo "  When it says done: scripts/ship.sh --publish-only drafts the GitHub release."
             fi
             echo "  To withdraw it: sudo -n -u releaser $SIGNER cancel --job $JOB"
             echo "  If it expires: sudo -n -u releaser $SIGNER retry --job $JOB asks Yun again."
