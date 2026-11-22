@@ -5,6 +5,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow 
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-11-22
+
 ### Added
 - **Help ▸ Rate PreviewMD…** opens the review page, where you can leave a
   review of PreviewMD or tell us about a problem.

@@ -14,17 +14,6 @@ final class CoalescingTests: UnivocalTestCase {
         (0..<words).map { i in i % 10 == 9 ? "w\(i)." : "w\(i)" }.joined(separator: " ")
     }
 
-    /// Polls a cheap condition on the mock (no fixed sleeps).
-    private func eventually(timeout: Duration = .seconds(10), _ what: String,
-                            _ condition: () async -> Bool) async throws {
-        let clock = ContinuousClock()
-        let deadline = clock.now.advanced(by: timeout)
-        while !(await condition()) {
-            guard clock.now < deadline else { throw WaitTimeout(description: "timed out waiting for \(what)") }
-            try await Task.sleep(for: .milliseconds(20))
-        }
-    }
-
     func testSlowReaderStillGetsEveryStateAndEndedAndTheLatestWord() async throws {
         let mock = try await startServer {
             $0.wordsPerMinute = 1_200_000   // 20k words/s

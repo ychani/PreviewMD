@@ -18,9 +18,9 @@ final class ConsentTests: UnivocalTestCase {
         let store = InMemoryTokenStore()
         let client = makeClient(store: store)
         _ = try await client.connect()
-        let all = await store.all
         let issued = await mock.issuedTokens
-        XCTAssertEqual(all, [server: issued[0]])
+        XCTAssertEqual(issued.count, 1)
+        try await eventually("the token to be stored") { await store.all == [server: issued[0]] }
         // S16: 32 random bytes, base64url, uc1_ prefix.
         XCTAssertTrue(issued[0].hasPrefix("uc1_"))
         XCTAssertEqual(issued[0].count, 4 + 43)
@@ -193,9 +193,9 @@ final class ConsentTests: UnivocalTestCase {
         let store = InMemoryTokenStore(initial: [server: "uc1_unknown"])
         let client = makeClient(store: store)
         _ = try await client.connect()
-        let all = await store.all
         let issued = await mock.issuedTokens
-        XCTAssertEqual(all[server], issued.first, "the fresh token replaced the unknown one")
+        let fresh = try XCTUnwrap(issued.first)
+        try await eventually("the fresh token to replace the unknown one") { await store.all[server] == fresh }
     }
 
     func testPreSeededGrantSkipsConsent() async throws {
@@ -226,8 +226,7 @@ final class ConsentTests: UnivocalTestCase {
         let last = await client.lastError
         XCTAssertEqual(last?.code, .unauthorized)
         XCTAssertEqual(last?.reason, "revoked")
-        let all = await store.all
-        XCTAssertTrue(all.isEmpty, "the revoked token is deleted")
+        try await eventually("the revoked token to be deleted") { await store.all.isEmpty }
 
         // No auto-retry for 10 minutes: connect() fails without contacting the server.
         let connectionsBefore = await mock.log.filter { $0.hasSuffix(" accepted") }.count

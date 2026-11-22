@@ -135,6 +135,18 @@ class UnivocalTestCase: XCTestCase {
         try await super.tearDown()
     }
 
+    /// Polls a cheap condition (no fixed sleeps). Use it for anything the
+    /// client does off the critical path, e.g. token writes and deletes.
+    func eventually(timeout: Duration = .seconds(10), _ what: String,
+                    _ condition: () async -> Bool) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while !(await condition()) {
+            guard clock.now < deadline else { throw WaitTimeout(description: "timed out waiting for \(what)") }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+    }
+
     /// Defaults for tests: no loading delay, manual clock (words advance on `advance(words:)`).
     func startServer(in directory: URL? = nil, _ configure: (inout MockBehaviour) -> Void = { _ in }) async throws -> MockServer {
         var b = MockBehaviour()

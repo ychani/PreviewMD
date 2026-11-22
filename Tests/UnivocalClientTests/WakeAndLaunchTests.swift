@@ -298,8 +298,8 @@ final class ConnectAtLaunchTests: UnivocalTestCase {
         let client = makeTarget(store: store)
         let info = try await client.connectIfAuthorized()
         XCTAssertNil(info)
-        let all = await store.all
-        XCTAssertTrue(all.isEmpty, "the refused token is deleted")
+        // The delete runs off the critical path (persistToken), so wait for it.
+        try await eventually("the refused token to be deleted") { await store.all.isEmpty }
         let pending = await mock.pendingConsentCount
         XCTAssertEqual(pending, 0)
         let log = await mock.log.joined(separator: "\n")
@@ -350,8 +350,7 @@ final class ConnectAtLaunchTests: UnivocalTestCase {
         XCTAssertNil(quiet)
         let info = try await client.connect()
         XCTAssertEqual(info.grantIdentity, "unverified:com.example.tests")
-        let all = await store.all
-        XCTAssertEqual(all.count, 1, "the user-initiated connect stored a fresh token")
+        try await eventually("the user-initiated connect to store a fresh token") { await store.all.count == 1 }
     }
 }
 
