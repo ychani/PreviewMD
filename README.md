@@ -204,6 +204,34 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for all build targets, the project layout
 
 </details>
 
+<!-- REVIEW PAGE: OFF (NAR-686). This is the "Leave a review" section that
+     Help ▸ Rate PreviewMD… and the in-app review ask link to
+     (https://github.com/ychani/PreviewMD#leave-a-review). develop is the
+     default branch, so anything outside this comment is public at once. Keep
+     it hidden until CMO 2 has verified PreviewMD's public review listing on
+     NAR-687 and the final wording from Brand & Editorial (NAR-688) is in.
+     To switch on: replace REVIEW_LISTING_URL below (the only place it is set)
+     pick the variant, move the section out of this comment, then set
+     ReviewLink.isLive = true in Sources/MdReaderCore/ReviewAsk.swift.
+     Keep the heading text, or update the anchor in ReviewLink with it.
+
+## Leave a review
+
+I’d like to hear what you think of PreviewMD. Honest feedback is welcome.
+
+[Leave a review](REVIEW_LISTING_URL)
+
+Something not working? Tell us at [narnarlabs@gmail.com](mailto:narnarlabs@gmail.com?subject=PreviewMD%20feedback).
+
+GitHub fallback (use instead of the invitation and button above only if no
+written-review listing passes on NAR-687; needs Discussions switched on):
+
+You can star PreviewMD on GitHub or share your feedback in Discussions.
+
+[Star on GitHub](https://github.com/ychani/PreviewMD) · [Share feedback in Discussions](https://github.com/ychani/PreviewMD/discussions)
+
+-->
+
 ## Contributing
 
 Bug reports and focused pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions and development guidance, [SECURITY.md](SECURITY.md) for private vulnerability reporting, and [CHANGELOG.md](CHANGELOG.md) for release history.

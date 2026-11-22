@@ -41,6 +41,7 @@ struct MdReaderApp: App {
                 .frame(minWidth: 820, minHeight: 520)
                 .onAppear {
                     appDelegate.appState = appState
+                    appState.documentWindowDidAppear()
                 }
                 // SwiftUI delivers a multi-file Finder/Dock open one URL at a
                 // time here (and may hand part of the batch to the delegate
@@ -140,6 +141,14 @@ struct MdReaderApp: App {
                 Menu("Read Aloud") {
                     ReadAloudCommands(readAloud: appState.readAloud,
                                       isDocumentReady: appState.canReadAloud)
+                }
+            }
+            CommandGroup(after: .help) {
+                // Hidden until a verified review listing is live (ReviewLink.isLive).
+                if ReviewLink.isLive {
+                    Button("Rate PreviewMD…") {
+                        ReviewAskPresenter.openReviewPage()
+                    }
                 }
             }
             CommandGroup(after: .toolbar) {

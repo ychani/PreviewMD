@@ -64,6 +64,23 @@ final class AppState: ObservableObject {
     /// Read Aloud via Univocal (toolbar, Edit ▸ Read Aloud).
     let readAloud = ReadAloudController()
 
+    /// The one-time review ask and Help ▸ Rate PreviewMD….
+    let reviewAsk = ReviewAskPresenter()
+
+    /// A document window opened: maybe show the review ask once it settles.
+    func documentWindowDidAppear() {
+        reviewAsk.windowDidOpen { [weak self] in
+            guard let self else { return ReviewAskMoment(hasModalOpen: true) }
+            return ReviewAskMoment(
+                isEditing: self.viewMode != .preview,
+                hasUnsavedChanges: self.isDirty,
+                isLoading: self.isLoading || self.isReadingFile,
+                isReadingAloud: self.readAloud.status.isActive,
+                hasModalOpen: NSApp.modalWindow != nil
+                    || NSApp.windows.contains { $0.attachedSheet != nil })
+        }
+    }
+
     /// A document is on screen in Preview or Split view (Read Aloud reads
     /// the preview).
     var canReadAloud: Bool {
@@ -955,7 +972,11 @@ final class AppState: ObservableObject {
     /// is still being read, in which case the render was of the placeholder.
     func markPreviewRendered() {
         guard !isReadingFile else { return }
-        if isLoading { isLoading = false }
+        if isLoading {
+            isLoading = false
+            // A freshly opened document rendered (not a re-render while typing).
+            if loadErrorMessage == nil, selectedFile != nil { reviewAsk.recordPreviewOpened() }
+        }
     }
 
     // MARK: – Saving
