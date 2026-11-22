@@ -51,7 +51,7 @@ final class ReviewAskPresenter {
         alert.informativeText = "I’d like to hear what you think of PreviewMD. Honest feedback is welcome."
         alert.addButton(withTitle: "Leave a review")
         alert.addButton(withTitle: "Not now")
-        alert.addButton(withTitle: "Don't Ask Again")
+        alert.addButton(withTitle: "Don't ask again")
         alert.beginSheetModal(for: window) { [weak self] response in
             MainActor.assumeIsolated {
                 switch response {
