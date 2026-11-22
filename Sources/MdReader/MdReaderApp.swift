@@ -144,8 +144,11 @@ struct MdReaderApp: App {
                 }
             }
             CommandGroup(after: .help) {
-                Button("Rate PreviewMD…") {
-                    ReviewAskPresenter.openReviewPage()
+                // Hidden until a verified review listing is live (ReviewLink.isLive).
+                if ReviewLink.isLive {
+                    Button("Rate PreviewMD…") {
+                        ReviewAskPresenter.openReviewPage()
+                    }
                 }
             }
             CommandGroup(after: .toolbar) {

@@ -16,7 +16,7 @@ final class ReviewAskTests: XCTestCase {
     private let calm = ReviewAskMoment()
 
     private func makePolicy() -> ReviewAskPolicy {
-        ReviewAskPolicy(store: store, now: { [unowned self] in self.clock })
+        ReviewAskPolicy(store: store, isEnabled: true, now: { [unowned self] in self.clock })
     }
 
     /// A policy for someone who has used PreviewMD long and often enough.
@@ -144,11 +144,11 @@ final class ReviewAskTests: XCTestCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let store = UserDefaultsReviewAskStore(defaults: defaults)
-        let policy = ReviewAskPolicy(store: store, now: { [unowned self] in self.clock })
+        let policy = ReviewAskPolicy(store: store, isEnabled: true, now: { [unowned self] in self.clock })
         for _ in 0..<10 { policy.recordPreviewOpened() }
         clock += 7 * day
         let reloaded = ReviewAskPolicy(store: UserDefaultsReviewAskStore(defaults: defaults),
-                                       now: { [unowned self] in self.clock })
+                                       isEnabled: true, now: { [unowned self] in self.clock })
         XCTAssertTrue(reloaded.shouldAsk(at: calm))
         reloaded.markAsked()
         reloaded.record(.dontAskAgain)
@@ -157,5 +157,18 @@ final class ReviewAskTests: XCTestCase {
 
     func testReviewLinkPointsAtReadmeSection() {
         XCTAssertEqual(ReviewLink.url.absoluteString, "https://github.com/ychani/PreviewMD#leave-a-review")
+    }
+
+    func testSwitchedOffWhileNoVerifiedListing() {
+        // Until CMO 2 verifies a public listing (NAR-687), the menu item and
+        // the ask stay off.
+        XCTAssertFalse(ReviewLink.isLive)
+        let policy = ReviewAskPolicy(store: store, now: { [unowned self] in self.clock })
+        for _ in 0..<50 { policy.recordPreviewOpened() }
+        clock += 60 * day
+        let later = ReviewAskPolicy(store: store, now: { [unowned self] in self.clock })
+        XCTAssertFalse(later.shouldAsk(at: calm), "off switch wins over eligibility")
+        let enabled = ReviewAskPolicy(store: store, isEnabled: true, now: { [unowned self] in self.clock })
+        XCTAssertTrue(enabled.shouldAsk(at: calm), "same state asks once switched on")
     }
 }

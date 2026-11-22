@@ -204,20 +204,24 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for all build targets, the project layout
 
 </details>
 
+<!-- REVIEW PAGE: OFF (NAR-686). This is the "Leave a review" section that
+     Help ▸ Rate PreviewMD… and the in-app review ask link to
+     (https://github.com/ychani/PreviewMD#leave-a-review). develop is the
+     default branch, so anything outside this comment is public at once. Keep
+     it hidden until CMO 2 has verified PreviewMD's public review listing on
+     NAR-687 and the final wording from Brand & Editorial (NAR-688) is in.
+     To switch on: replace REVIEW_LISTING_URL below (the only place it is set)
+     and the placeholder text, move the section out of this comment, then set
+     ReviewLink.isLive = true in Sources/MdReaderCore/ReviewAsk.swift.
+     Keep the heading text, or update the anchor in ReviewLink with it.
+
 ## Leave a review
 
-<!-- Linked from PreviewMD's Help ▸ Rate PreviewMD… and the in-app review ask
-     (ReviewLink in Sources/MdReaderCore/ReviewAsk.swift). Keep this heading
-     text, or update that anchor with it. Placeholder wording (NAR-686) until
-     the final text from NAR-687. -->
+[Leave a review](REVIEW_LISTING_URL)
 
-**How's it going with PreviewMD?**
+Something not working? Tell us at [narnarlabs@gmail.com](mailto:narnarlabs@gmail.com?subject=PreviewMD%20feedback), or [open a GitHub issue](https://github.com/ychani/PreviewMD/issues/new).
 
-**Love it?** Star [PreviewMD on GitHub](https://github.com/ychani/PreviewMD) (the ☆ Star button at the top of this page). It takes a few seconds and helps other people find it.
-
-**Something's wrong?** Tell us privately at [narnarlabs@gmail.com](mailto:narnarlabs@gmail.com?subject=PreviewMD%20feedback), or [open an issue](https://github.com/ychani/PreviewMD/issues/new).
-
-**Can we quote you?** If you'd like us to share what you said, add "You can quote me" to your email. We only use quotes with permission.
+-->
 
 ## Contributing
 

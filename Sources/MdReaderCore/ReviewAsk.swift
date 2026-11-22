@@ -7,6 +7,12 @@ import Foundation
 /// where reviews go without shipping a new app version — keep the README
 /// heading text stable, or update this anchor with it.
 public enum ReviewLink {
+    /// Off switch for Help ▸ Rate PreviewMD… and the review ask. Stays `false`
+    /// until CMO 2 has verified PreviewMD's public review listing (NAR-687)
+    /// and the README "Leave a review" section is public. While it is off,
+    /// the menu item is hidden and the ask never shows.
+    public static let isLive = false
+
     public static let url = URL(string: "https://github.com/ychani/PreviewMD#leave-a-review")!
 }
 
@@ -109,10 +115,14 @@ public final class ReviewAskPolicy {
 
     private let store: ReviewAskStore
     private let now: () -> Date
+    private let isEnabled: Bool
     private var askedThisLaunch = false
 
-    public init(store: ReviewAskStore, now: @escaping () -> Date = Date.init) {
+    /// `isEnabled` is `ReviewLink.isLive` in the app; when false the ask never shows.
+    public init(store: ReviewAskStore, isEnabled: Bool = ReviewLink.isLive,
+                now: @escaping () -> Date = Date.init) {
         self.store = store
+        self.isEnabled = isEnabled
         self.now = now
         if store.firstSeen == nil { store.firstSeen = now() }
     }
@@ -125,7 +135,7 @@ public final class ReviewAskPolicy {
 
     /// Whether the ask may show right now.
     public func shouldAsk(at moment: ReviewAskMoment) -> Bool {
-        guard moment.isCalm, !askedThisLaunch, !store.isFinished,
+        guard isEnabled, moment.isCalm, !askedThisLaunch, !store.isFinished,
               store.timesAsked < Self.maximumAsks else { return false }
         let current = now()
         if let lastAsked = store.lastAsked {
