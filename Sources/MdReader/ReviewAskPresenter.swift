@@ -4,7 +4,7 @@ import MdReaderCore
 /// Shows the one gentle review ask (policy in `ReviewAskPolicy`) and opens
 /// the review page for "Rate PreviewMD…".
 ///
-/// Wording is placeholder until Brand & Editorial's final text (NAR-688) lands.
+/// Wording is Brand & Editorial's final text (NAR-688), verbatim.
 @MainActor
 final class ReviewAskPresenter {
     /// Wait this long after a window opens, then check again that nothing
@@ -46,11 +46,11 @@ final class ReviewAskPresenter {
     private func present(on window: NSWindow) {
         let alert = NSAlert()
         alert.icon = NSApp.applicationIconImage
-        // Placeholder wording (NAR-686); final text comes from NAR-688.
-        alert.messageText = "Enjoying PreviewMD?"
-        alert.informativeText = "A short review helps other people find it."
-        alert.addButton(withTitle: "Leave a Review")
-        alert.addButton(withTitle: "Not Now")
+        // Final wording from Brand & Editorial (NAR-688 copy document).
+        alert.messageText = "Want to share feedback on PreviewMD?"
+        alert.informativeText = "I’d like to hear what you think of PreviewMD. Honest feedback is welcome."
+        alert.addButton(withTitle: "Leave a review")
+        alert.addButton(withTitle: "Not now")
         alert.addButton(withTitle: "Don't Ask Again")
         alert.beginSheetModal(for: window) { [weak self] response in
             MainActor.assumeIsolated {
