@@ -69,8 +69,7 @@ final class TransportTests: UnivocalTestCase {
         let client = makeClient(store: store, directory: wsDir)
         let info = try await client.connect()
         XCTAssertEqual(info.transport, .webSocket)
-        let tokens = await store.all
-        XCTAssertEqual(tokens.count, 1)
+        try await eventually("the token to be stored") { await store.all.count == 1 }
 
         let text = "Over the WebSocket."
         let session = try await client.read(ReadRequest(text: text))
