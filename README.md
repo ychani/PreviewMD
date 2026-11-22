@@ -204,6 +204,21 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for all build targets, the project layout
 
 </details>
 
+## Leave a review
+
+<!-- Linked from PreviewMD's Help ▸ Rate PreviewMD… and the in-app review ask
+     (ReviewLink in Sources/MdReaderCore/ReviewAsk.swift). Keep this heading
+     text, or update that anchor with it. Placeholder wording (NAR-686) until
+     the final text from NAR-687. -->
+
+**How's it going with PreviewMD?**
+
+**Love it?** Star [PreviewMD on GitHub](https://github.com/ychani/PreviewMD) (the ☆ Star button at the top of this page). It takes a few seconds and helps other people find it.
+
+**Something's wrong?** Tell us privately at [narnarlabs@gmail.com](mailto:narnarlabs@gmail.com?subject=PreviewMD%20feedback), or [open an issue](https://github.com/ychani/PreviewMD/issues/new).
+
+**Can we quote you?** If you'd like us to share what you said, add "You can quote me" to your email. We only use quotes with permission.
+
 ## Contributing
 
 Bug reports and focused pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions and development guidance, [SECURITY.md](SECURITY.md) for private vulnerability reporting, and [CHANGELOG.md](CHANGELOG.md) for release history.
