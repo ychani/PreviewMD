@@ -159,14 +159,18 @@ final class ReviewAskTests: XCTestCase {
         XCTAssertEqual(ReviewLink.url.absoluteString, "https://github.com/ychani/PreviewMD#leave-a-review")
     }
 
+    func testLiveNowThatListingIsVerified() {
+        // CMO 2 verified the AlternativeTo listing on NAR-687 (Nov 22).
+        XCTAssertTrue(ReviewLink.isLive)
+    }
+
     func testSwitchedOffWhileNoVerifiedListing() {
-        // Until CMO 2 verifies a public listing (NAR-687), the menu item and
-        // the ask stay off.
-        XCTAssertFalse(ReviewLink.isLive)
-        let policy = ReviewAskPolicy(store: store, now: { [unowned self] in self.clock })
+        // The off switch still wins over eligibility: if the listing is ever
+        // pulled, isLive = false hides the menu item and the ask.
+        let policy = ReviewAskPolicy(store: store, isEnabled: false, now: { [unowned self] in self.clock })
         for _ in 0..<50 { policy.recordPreviewOpened() }
         clock += 60 * day
-        let later = ReviewAskPolicy(store: store, now: { [unowned self] in self.clock })
+        let later = ReviewAskPolicy(store: store, isEnabled: false, now: { [unowned self] in self.clock })
         XCTAssertFalse(later.shouldAsk(at: calm), "off switch wins over eligibility")
         let enabled = ReviewAskPolicy(store: store, isEnabled: true, now: { [unowned self] in self.clock })
         XCTAssertTrue(enabled.shouldAsk(at: calm), "same state asks once switched on")

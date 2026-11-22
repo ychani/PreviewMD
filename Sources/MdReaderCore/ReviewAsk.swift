@@ -7,11 +7,11 @@ import Foundation
 /// where reviews go without shipping a new app version — keep the README
 /// heading text stable, or update this anchor with it.
 public enum ReviewLink {
-    /// Off switch for Help ▸ Rate PreviewMD… and the review ask. Stays `false`
-    /// until CMO 2 has verified PreviewMD's public review listing (NAR-687)
-    /// and the README "Leave a review" section is public. While it is off,
-    /// the menu item is hidden and the ask never shows.
-    public static let isLive = false
+    /// Switch for Help ▸ Rate PreviewMD… and the review ask. On since CMO 2
+    /// verified PreviewMD's public review listing (NAR-687, Nov 22 2026) and
+    /// the README "Leave a review" section is public. Set it back to `false`
+    /// if the listing stops working: the menu item hides and the ask stops.
+    public static let isLive = true
 
     public static let url = URL(string: "https://github.com/ychani/PreviewMD#leave-a-review")!
 }

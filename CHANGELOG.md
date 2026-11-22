@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow 
 
 ## [Unreleased]
 
+### Added
+- **Help ▸ Rate PreviewMD…** opens the review page, where you can leave a
+  review of PreviewMD or tell us about a problem.
+- **A one-time review ask.** After about 7 days and 10 opened previews,
+  PreviewMD asks once, shortly after a window opens and never while you're
+  editing, reading aloud or have unsaved changes. "Not now" asks once more
+  after 30 days; "Don't ask again" ends it. Your answer stays on your Mac.
+
 ## [0.5.0] — 2026-11-03
 
 Univocal is one app for all the text you read and write. Read Aloud reads the open document through Univocal 0.3.29 or later, highlighting the current word and sentence as it goes. Start it from the toolbar or Edit ▸ Read Aloud (⇧⌘R). The first time, allow PreviewMD in Univocal. Text is sent to Univocal on the same Mac only when you start reading.
