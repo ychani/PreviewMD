@@ -107,30 +107,6 @@ if [ "$DRY" = 0 ] && [ -e "$OB" ]; then
     die "$OB already exists: $VERSION was signed before. Bump the version, or --publish-only."
 fi
 
-# ── 2. Tests ─────────────────────────────────────────────────────────────
-if [ "${SKIP_TESTS:-}" = "1" ]; then
-    echo "!!! SKIP_TESTS=1: shipping WITHOUT running the tests !!!" >&2
-else
-    swift test || die "tests failed: refusing to ship (SKIP_TESTS=1 to override)"
-fi
-
-# ── 3. Build, ad-hoc signed ──────────────────────────────────────────────
-# The signer strips and re-signs the Quick Look extension and the app with
-# Developer ID, inner to outer.
-say "Building $APP_NAME $VERSION from $COMMIT"
-BUILD_START=$(date +%s)
-make app SIGN_IDENTITY=- DEVELOPER_ID= >/dev/null
-[ -d "$APP" ] || die "$APP not produced"
-plist() { /usr/libexec/PlistBuddy -c "Print :$1" "$APP/Contents/Info.plist"; }
-[ "$(plist CFBundleShortVersionString)" = "$VERSION" ] || die "$APP is not version $VERSION"
-[ "$(plist CFBundleIdentifier)" = com.narnarlabs.previewmd ] || die "unexpected bundle id $(plist CFBundleIdentifier)"
-[ "$(stat -f %m "$APP/Contents/MacOS/$APP_NAME")" -ge "$BUILD_START" ] || die "$APP was not rebuilt by this run"
-[ -d "$APP/Contents/PlugIns/$APP_NAME-QL.appex" ] || die "the Quick Look extension is missing"
-ARCHS="$(lipo -archs "$APP/Contents/MacOS/$APP_NAME" | tr ' ' '\n' | sort | tr '\n' ' ' | xargs)"
-[ "$ARCHS" = "arm64 x86_64" ] || die "binary is not universal: $ARCHS"
-
-# ── 4. Hand it to the signer ─────────────────────────────────────────────
-say "Sending the app to the release signer"
 # What changed, for Yun's phone: this version's headlines from CHANGELOG.md,
 # one short line per entry. The signer shows them above its own checked lines
 # (marked as not checked) and cuts them to 8 lines.
@@ -171,13 +147,52 @@ print("\n".join(out))
 PY
 }
 
+# Yun approves from the phone request, so its notes must not go missing
+# silently. Checked before the tests and the build so a gap fails fast. A real
+# release stops; a dry run only warns. ALLOW_NO_NOTES=1 overrides (emergency).
+NOTES=""
+notes_problem() {
+    if [ "$DRY" = 1 ] || [ "${ALLOW_NO_NOTES:-}" = 1 ]; then
+        printf '\n!!! WARNING: %s\n!!! The phone request will show NO release notes.\n\n' "$1" >&2
+    else
+        die "$1 Refusing to ship without release notes on the phone request (ALLOW_NO_NOTES=1 to override)."
+    fi
+}
+if ! grep -qE -- '^[[:space:]]*--notes\)' "$SIGNER" 2>/dev/null; then
+    notes_problem "the installed signer ($SIGNER) is too old to take release notes: reinstall it from narnar-release (Yun runs the installer)."
+else
+    NOTES="$(release_notes)" || die "could not read release notes from CHANGELOG.md"
+    [ -n "$NOTES" ] || notes_problem "CHANGELOG.md has no entries under '## $VERSION': write this version's entry first."
+fi
+if [ -n "$NOTES" ]; then printf 'Release notes for the phone request:\n%s\n' "$NOTES"; fi
+
+# ── 2. Tests ─────────────────────────────────────────────────────────────
+if [ "${SKIP_TESTS:-}" = "1" ]; then
+    echo "!!! SKIP_TESTS=1: shipping WITHOUT running the tests !!!" >&2
+else
+    swift test || die "tests failed: refusing to ship (SKIP_TESTS=1 to override)"
+fi
+
+# ── 3. Build, ad-hoc signed ──────────────────────────────────────────────
+# The signer strips and re-signs the Quick Look extension and the app with
+# Developer ID, inner to outer.
+say "Building $APP_NAME $VERSION from $COMMIT"
+BUILD_START=$(date +%s)
+make app SIGN_IDENTITY=- DEVELOPER_ID= >/dev/null
+[ -d "$APP" ] || die "$APP not produced"
+plist() { /usr/libexec/PlistBuddy -c "Print :$1" "$APP/Contents/Info.plist"; }
+[ "$(plist CFBundleShortVersionString)" = "$VERSION" ] || die "$APP is not version $VERSION"
+[ "$(plist CFBundleIdentifier)" = com.narnarlabs.previewmd ] || die "unexpected bundle id $(plist CFBundleIdentifier)"
+[ "$(stat -f %m "$APP/Contents/MacOS/$APP_NAME")" -ge "$BUILD_START" ] || die "$APP was not rebuilt by this run"
+[ -d "$APP/Contents/PlugIns/$APP_NAME-QL.appex" ] || die "the Quick Look extension is missing"
+ARCHS="$(lipo -archs "$APP/Contents/MacOS/$APP_NAME" | tr ' ' '\n' | sort | tr '\n' ' ' | xargs)"
+[ "$ARCHS" = "arm64 x86_64" ] || die "binary is not universal: $ARCHS"
+
+# ── 4. Hand it to the signer ─────────────────────────────────────────────
+say "Sending the app to the release signer"
 ARGS=(stage --app "$APP_ID" --version "$VERSION" --commit "$COMMIT")
 [ "$DRY" = 1 ] && ARGS+=(--dry-run)
-# Only when the installed signer knows --notes (an older one refuses it).
-if grep -q -- '--notes)' "$SIGNER" 2>/dev/null; then
-    NOTES="$(release_notes 2>/dev/null || true)"
-    [ -n "$NOTES" ] && ARGS+=(--notes "$NOTES")
-fi
+[ -n "$NOTES" ] && ARGS+=(--notes "$NOTES")
 OUT="$(/usr/bin/ditto -c -k --keepParent "$APP" - | sudo -n -u releaser "$SIGNER" "${ARGS[@]}")" \
     || die "the signer refused the build (output above)"
 echo "$OUT"
