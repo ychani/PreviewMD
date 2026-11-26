@@ -4,16 +4,16 @@
 
 APP_NAME          := PreviewMD
 QL_NAME           := PreviewMD-QL
-# Universal by default. Multi-arch `swift build` goes through the Xcode build
-# system (full Xcode required) and writes to .build/apple/Products/Release.
-# A single arch (e.g. `make app ARCHS=arm64`) uses SwiftPM's native build
-# system and works with just the Command Line Tools.
+# Universal by default. Multi-arch `swift build` needs full Xcode; a single
+# arch (e.g. `make app ARCHS=arm64`) works with just the Command Line Tools.
 ARCHS             ?= arm64 x86_64
-ifeq ($(words $(ARCHS)),1)
-BUILD_DIR         := .build/$(strip $(ARCHS))-apple-macosx/release
-else
-BUILD_DIR         := .build/apple/Products/Release
-endif
+SWIFT_ARCH_FLAGS   = $(foreach a,$(ARCHS),--arch $(a))
+# Ask SwiftPM where the build goes instead of hard-coding it. The output
+# folder moved with the toolchain (.build/apple/Products/Release before
+# Swift 6.4's swiftbuild, .build/out/Products/Release after), and copying
+# from the old folder shipped a stale Nov 1 binary as 0.5.1 (NAR-738).
+# Recursive (=) so it only runs when a recipe needs it.
+BUILD_DIR          = $(shell swift build -c release $(SWIFT_ARCH_FLAGS) --show-bin-path)
 DIST_DIR          := dist
 APP_DIR           := $(DIST_DIR)/$(APP_NAME).app
 CONTENTS          := $(APP_DIR)/Contents
@@ -60,7 +60,7 @@ CODESIGN          := codesign --sign "$(SIGN_IDENTITY)" --force --options runtim
 all: app
 
 build:
-	swift build -c release $(foreach a,$(ARCHS),--arch $(a))
+	swift build -c release $(SWIFT_ARCH_FLAGS)
 
 run:
 	swift run $(APP_NAME)

@@ -184,6 +184,14 @@ plist() { /usr/libexec/PlistBuddy -c "Print :$1" "$APP/Contents/Info.plist"; }
 [ "$(plist CFBundleShortVersionString)" = "$VERSION" ] || die "$APP is not version $VERSION"
 [ "$(plist CFBundleIdentifier)" = com.narnarlabs.previewmd ] || die "unexpected bundle id $(plist CFBundleIdentifier)"
 [ "$(stat -f %m "$APP/Contents/MacOS/$APP_NAME")" -ge "$BUILD_START" ] || die "$APP was not rebuilt by this run"
+# The bundle must hold this build's binary, not a leftover from an older
+# build folder: 0.5.1 shipped a Nov 1 binary that way (NAR-738).
+BIN_DIR="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)"
+uuids() { dwarfdump --uuid "$1" | awk '{print $2, $3}' | sort; }  # signing changes bytes, not UUIDs
+[ "$(uuids "$BIN_DIR/$APP_NAME")" = "$(uuids "$APP/Contents/MacOS/$APP_NAME")" ] \
+    || die "the app's binary is not the one SwiftPM just built in $BIN_DIR"
+NEWEST_SRC="$(find Sources Package.swift Package.resolved -type f -newer "$BIN_DIR/$APP_NAME" 2>/dev/null | head -1)"
+[ -z "$NEWEST_SRC" ] || die "the built binary is older than $NEWEST_SRC: stale build"
 [ -d "$APP/Contents/PlugIns/$APP_NAME-QL.appex" ] || die "the Quick Look extension is missing"
 ARCHS="$(lipo -archs "$APP/Contents/MacOS/$APP_NAME" | tr ' ' '\n' | sort | tr '\n' ' ' | xargs)"
 [ "$ARCHS" = "arm64 x86_64" ] || die "binary is not universal: $ARCHS"
