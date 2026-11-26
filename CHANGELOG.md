@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow 
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-11-27
+
+### Fixed
+- **Read Aloud is back.** The 0.5.1 download contained an older build by
+  mistake, so it was missing Read Aloud and the review ask. 0.5.2 is the
+  real 0.5.1 code: Read Aloud (toolbar button and Edit ▸ Read Aloud, ⇧⌘R)
+  works again.
+- **Help ▸ Rate PreviewMD… and the one-time review ask** from 0.5.1 are now
+  actually included.
+
 ## [0.5.1] — 2026-11-22
 
 ### Added
