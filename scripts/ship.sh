@@ -190,7 +190,12 @@ BIN_DIR="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)"
 uuids() { dwarfdump --uuid "$1" | awk '{print $2, $3}' | sort; }  # signing changes bytes, not UUIDs
 [ "$(uuids "$BIN_DIR/$APP_NAME")" = "$(uuids "$APP/Contents/MacOS/$APP_NAME")" ] \
     || die "the app's binary is not the one SwiftPM just built in $BIN_DIR"
-NEWEST_SRC="$(find Sources Package.swift Package.resolved -type f -newer "$BIN_DIR/$APP_NAME" 2>/dev/null | head -1)"
+# Only paths that exist: this package has no Package.resolved, and a failing
+# find would end the script silently under `set -e -o pipefail` (NAR-765).
+SRC_PATHS=(Sources Package.swift)
+[ -e Package.resolved ] && SRC_PATHS+=(Package.resolved)
+NEWEST_SRC="$(find "${SRC_PATHS[@]}" -type f -newer "$BIN_DIR/$APP_NAME" | head -1)" \
+    || die "could not compare the built binary with the sources"
 [ -z "$NEWEST_SRC" ] || die "the built binary is older than $NEWEST_SRC: stale build"
 [ -d "$APP/Contents/PlugIns/$APP_NAME-QL.appex" ] || die "the Quick Look extension is missing"
 ARCHS="$(lipo -archs "$APP/Contents/MacOS/$APP_NAME" | tr ' ' '\n' | sort | tr '\n' ' ' | xargs)"
