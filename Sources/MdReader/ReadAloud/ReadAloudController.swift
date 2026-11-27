@@ -267,8 +267,13 @@ final class ReadAloudController: ObservableObject {
         Task { try? await session.seek(toUTF16Offset: offset) }
     }
 
+    /// Where the in-app Get Univocal buttons go: a univocalapp.com redirect
+    /// that is counted in Cloudflare (the README uses /go/previewmd), so the
+    /// app's clicks can be told apart from the plain home page.
+    static let downloadURL = URL(string: "https://univocalapp.com/go/previewmd-app")!
+
     func openDownloadPage() {
-        openURL(UnivocalLocator.downloadURL)
+        openURL(Self.downloadURL)
     }
 
     /// The popover's Download button.

@@ -547,7 +547,7 @@ final class ReadAloudControllerTests: XCTestCase {
         controller.downloadFromNotice()
         XCTAssertNil(controller.notice)
         XCTAssertNil(controller.noticeDownload)
-        XCTAssertEqual(opened, [UnivocalLocator.downloadURL])
+        XCTAssertEqual(opened, [URL(string: "https://univocalapp.com/go/previewmd-app")!])
         XCTAssertFalse(bridge.calls.contains { if case .requestText = $0 { return true } else { return false } })
 
         // Installed meanwhile: the next click reads, with no popover.
@@ -570,7 +570,7 @@ final class ReadAloudControllerTests: XCTestCase {
         XCTAssertEqual(controller.notice, "Read aloud requires Univocal 0.3.29 or later.")
         XCTAssertEqual(opened, [])
         controller.downloadFromNotice()
-        XCTAssertEqual(opened, [UnivocalLocator.downloadURL])
+        XCTAssertEqual(opened, [URL(string: "https://univocalapp.com/go/previewmd-app")!])
         XCTAssertTrue(backend.requests.isEmpty)
         XCTAssertFalse(bridge.calls.contains { if case .requestText = $0 { return true } else { return false } })
 
