@@ -5,6 +5,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow 
 
 ## [Unreleased]
 
+### Changed
+- The Get Univocal button now opens a Univocal link made for PreviewMD, so we can see how many people find Univocal from inside the app.
+
 ## [0.5.2] — 2026-11-27
 
 ### Fixed
